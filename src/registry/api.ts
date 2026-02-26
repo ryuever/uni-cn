@@ -32,9 +32,9 @@ import type { GetProjectTailwindVersionFromConfigService } from '../utils/get-pr
 import { GetProjectTailwindVersionFromConfigServiceId } from '../utils/get-project-info';
 import { highlighter } from '../utils/highlighter';
 
-const REGISTRY_URL =
-  process.env.REGISTRY_URL ?? 'https://fe-docs.devops.xiaohongshu.com/xswr/r';
-// const REGISTRY_URL = process.env.REGISTRY_URL ?? 'https://shadcn-vue.com/r';
+// const REGISTRY_URL =
+//   process.env.REGISTRY_URL ?? 'https://fe-docs.devops.xiaohongshu.com/xswr/r';
+const REGISTRY_URL = process.env.REGISTRY_URL ?? 'https://shadcn-vue.com/r';
 
 export const RegistryGetThemeServiceId = createId(
   'registry-get-theme-service-id'

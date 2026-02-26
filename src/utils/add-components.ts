@@ -63,6 +63,8 @@ export class AddComponentsService {
       silent?: boolean;
       isNewProject?: boolean;
       style?: string;
+      /** When true, skip updateDependencies (npm install). For memfs. */
+      skipDependenciesInstall?: boolean;
     }
   ) {
     options = {
@@ -72,8 +74,6 @@ export class AddComponentsService {
       style: 'index',
       ...options,
     };
-
-    console.log('>>>>>> options ', options)
 
     const workspaceConfig = await getWorkspaceConfig(config);
     if (
@@ -94,7 +94,6 @@ export class AddComponentsService {
       );
     }
 
-    console.log('>>>>>> config ', config)
     return await this.addProjectComponentsService.addProjectComponents(
       components,
       config,
@@ -128,6 +127,7 @@ export class AddProjectComponentsService {
       silent?: boolean;
       isNewProject?: boolean;
       style?: string;
+      skipDependenciesInstall?: boolean;
     }
   ) {
     const registrySpinner = spinner(`Checking registry.`, {
@@ -175,9 +175,14 @@ export class AddProjectComponentsService {
       silent: options.silent,
     });
 
-    await updateDependencies(tree.dependencies, tree.devDependencies, config, {
-      silent: options.silent,
-    });
+    // TODO: skipDependenciesInstall 参数在 init 中没有用到，这里需要处理一下；
+    // 如果是memfs的话，不执行 install 操作，但是需要更新 package.json 中的 dependencies
+    // 和 devDependencies。因为这些东西可以通过esm的方式来安装
+    if (!options.skipDependenciesInstall) {
+      await updateDependencies(tree.dependencies, tree.devDependencies, config, {
+        silent: options.silent,
+      });
+    }
     await this.updateFilesService.updateFiles(tree.files, config, {
       overwrite: options.overwrite,
       silent: options.silent,
@@ -214,6 +219,7 @@ export class AddWorkspaceComponentsService {
       isNewProject?: boolean;
       isRemote?: boolean;
       style?: string;
+      skipDependenciesInstall?: boolean;
     }
   ) {
     const registrySpinner = spinner(`Checking registry.`, {
@@ -321,19 +327,21 @@ export class AddWorkspaceComponentsService {
       }
 
       // 4. Update dependencies.
-      await Promise.allSettled([
-        component.dependencies && component.dependencies.length
-          ? updateDependencies(component.dependencies, targetConfig, {
-              silent: true,
-            })
-          : Promise.resolve(),
-        component.devDependencies && component.devDependencies.length
-          ? updateDependencies(component.devDependencies, targetConfig, {
-              silent: true,
-              dev: true,
-            })
-          : Promise.resolve(),
-      ]);
+      if (!options.skipDependenciesInstall) {
+        await Promise.allSettled([
+          component.dependencies && component.dependencies.length
+            ? updateDependencies(component.dependencies, targetConfig, {
+                silent: true,
+              })
+            : Promise.resolve(),
+          component.devDependencies && component.devDependencies.length
+            ? updateDependencies(component.devDependencies, targetConfig, {
+                silent: true,
+                dev: true,
+              })
+            : Promise.resolve(),
+        ]);
+      }
 
       // 5. Update files.
       const files = await this.updateFilesService.updateFiles(

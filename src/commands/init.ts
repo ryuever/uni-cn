@@ -18,7 +18,7 @@ import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';
 import { AddComponentsServiceId } from '@/utils/add-components';
 import type { AddComponentsService } from '@/utils/add-components';
-import type { Config } from '@/utils/get-config';
+import type { Config, RawConfig } from '@/utils/get-config';
 import {
   DEFAULT_COMPONENTS,
   DEFAULT_TAILWIND_CONFIG,
@@ -81,6 +81,12 @@ export const initOptionsSchema = z.object({
       }
     ),
   style: z.string(),
+  /** When provided, skip getProjectConfig/getConfig. Use resolvedPaths if present to skip resolveConfigPaths (for memfs). */
+  config: z.custom<RawConfig | Config>().optional(),
+  /** When true, skip updateDependencies (npm install). Use for memfs where execa cannot run. */
+  skipDependenciesInstall: z.boolean().optional(),
+  /** When true, skip addComponents entirely. Use when getTSConfig/updateFiles cannot run (e.g. memfs without Node fs for tsconfig). */
+  skipAddComponents: z.boolean().optional(),
 });
 
 export const PromptForMinimalConfigServiceId = createId(
@@ -113,7 +119,9 @@ export class InitCommandService {
     }
   ) {
     let projectInfo;
-    if (!options.skipPreflight) {
+    if (options.config) {
+      projectInfo = null;
+    } else if (!options.skipPreflight) {
       const preflight = await this.preFlightInitService.preFlightInit(options);
       if (preflight.errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT]) {
         process.exit(1);
@@ -125,16 +133,20 @@ export class InitCommandService {
       );
     }
 
-    const projectConfig = await this.getProjectConfigService.getProjectConfig(
-      options.cwd,
-      projectInfo
+    const config = options.config ?? (
+      await (async () => {
+        const projectConfig = await this.getProjectConfigService.getProjectConfig(
+          options.cwd,
+          projectInfo
+        );
+        return projectConfig
+          ? await this.promptForMinimalConfigService.promptForMinimalConfig(
+              projectConfig,
+              options
+            )
+          : await promptForConfig(await getConfig(options.cwd));
+      })()
     );
-    const config = projectConfig
-      ? await this.promptForMinimalConfigService.promptForMinimalConfig(
-          projectConfig,
-          options
-        )
-      : await promptForConfig(await getConfig(options.cwd));
 
     if (!options.yes) {
       const { proceed } = await prompts({
@@ -152,17 +164,26 @@ export class InitCommandService {
     }
 
     // Write components.json.
-    const componentSpinner = spinner(`Writing components.json.`).start();
+    const componentSpinner = spinner(`Writing components.json.`, {
+      silent: options.silent,
+    }).start();
     const targetPath = path.resolve(options.cwd, 'components.json');
     await this.fileSystemService.promisifyFs.writeFile(
       targetPath,
       JSON.stringify(config, null, 2),
       'utf8'
     );
-    componentSpinner.succeed();
+    componentSpinner?.succeed();
+
+    if (options.skipAddComponents) {
+      return ('resolvedPaths' in config ? config : { ...config, resolvedPaths: {} }) as Config;
+    }
 
     // Add components.
-    const fullConfig = await resolveConfigPaths(options.cwd, config);
+    const fullConfig =
+      config && 'resolvedPaths' in config && config.resolvedPaths?.cwd
+        ? (config as Config)
+        : await resolveConfigPaths(options.cwd, config as RawConfig);
     const components = [
       ...(options.style === 'none' ? [] : [options.style]),
       ...(options.components ?? []),
@@ -174,6 +195,7 @@ export class InitCommandService {
       style: options.style,
       isNewProject:
         options.isNewProject || projectInfo?.framework.name === 'nuxt',
+      skipDependenciesInstall: options.skipDependenciesInstall,
     });
 
     // If a new project is using src dir, let's update the tailwind content config.

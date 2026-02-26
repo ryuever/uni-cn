@@ -1,15 +1,15 @@
 /**
- * Verify: read content.ts -> populate memfs -> assert files exist
+ * Verify: read content.ts -> populate memfs -> runInitWithVolume -> assert files exist
  */
 import type { Volume } from 'memfs';
 import { getPopulatedVolume } from './populate-memfs';
+import { runInitWithVolume } from './runInit';
 
 const ROOT = '/project';
 
 function printTree(vol: Volume, dir: string, prefix = ''): void {
   const entries = vol.readdirSync(dir, { withFileTypes: true }) as Array<{ name: string; isDirectory: () => boolean }>;
   const sorted = entries.sort((a, b) => {
-    // dirs first, then alphabetically
     const aDir = a.isDirectory() ? 0 : 1;
     const bDir = b.isDirectory() ? 0 : 1;
     if (aDir !== bDir) return aDir - bDir;
@@ -37,6 +37,16 @@ const parsed = JSON.parse(packageJson as string);
 console.log('[verify] memfs populated successfully');
 console.log('[verify] root:', root);
 console.log('[verify] package.json name:', parsed.name);
+
+// Run init to add components.json to vol
+await runInitWithVolume(vol, root);
+console.log('[verify] runInitWithVolume done, components.json added');
+
+// Verify components.json exists
+const componentsJson = vol.readFileSync(`${root}/components.json`, 'utf-8');
+const componentsConfig = JSON.parse(componentsJson as string);
+console.log('[verify] components.json style:', componentsConfig.style);
+
 console.log('\n[verify] tree:');
 console.log(root + '/');
 printTree(vol, root);
