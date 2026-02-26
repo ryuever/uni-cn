@@ -1,0 +1,434 @@
+/* eslint-disable prefer-const */
+import { createId, inject, injectable } from '@/delightless-vue/di';
+import {
+  fetchRegistry,
+  getRegistryParentMap,
+  getRegistryTypeAliasMap,
+  RegistryResolveItemsTreeServiceId,
+  resolveRegistryItems,
+} from '@/delightless-vue/registry/api';
+import type { RegistryResolveItemsTreeService } from '@/delightless-vue/registry/api';
+import { registryItemSchema } from '@/delightless-vue/registry/schema';
+import type {
+  Config,
+  configSchema,
+  workspaceConfigSchema,
+} from '@/delightless-vue/utils/get-config';
+import {
+  findCommonRoot,
+  findPackageRoot,
+  getWorkspaceConfig,
+} from '@/delightless-vue/utils/get-config';
+import { handleError } from '@/delightless-vue/utils/handle-error';
+import { logger } from '@/delightless-vue/utils/logger';
+import { spinner } from '@/delightless-vue/utils/spinner';
+import type { UpdateCssService } from '@/delightless-vue/utils/updaters/update-css';
+import { UpdateCssServiceId } from '@/delightless-vue/utils/updaters/update-css';
+import { updateDependencies } from '@/delightless-vue/utils/updaters/update-dependencies';
+import type { UpdateFilesService } from '@/delightless-vue/utils/updaters/update-files';
+import { UpdateFilesServiceId } from '@/delightless-vue/utils/updaters/update-files';
+import type { UpdateTailwindConfigService } from '@/delightless-vue/utils/updaters/update-tailwind-config';
+import { UpdateTailwindConfigServiceId } from '@/delightless-vue/utils/updaters/update-tailwind-config';
+
+import { z } from 'zod';
+
+import path from 'pathe';
+
+import type { GetProjectTailwindVersionFromConfigService } from './get-project-info';
+import { GetProjectTailwindVersionFromConfigServiceId } from './get-project-info';
+import type { UpdateCssVarsService } from './updaters/update-css-vars';
+import { UpdateCssVarsServiceId } from './updaters/update-css-vars';
+
+export const AddComponentsServiceId = createId('add-components-service-id');
+export const AddProjectComponentsServiceId = createId(
+  'add-project-components-service-id'
+);
+export const AddWorkspaceComponentsServiceId = createId(
+  'add-workspace-components-service-id'
+);
+@injectable()
+export class AddComponentsService {
+  constructor(
+    @inject(AddProjectComponentsServiceId)
+    private readonly addProjectComponentsService: AddProjectComponentsService,
+    @inject(AddWorkspaceComponentsServiceId)
+    private readonly addWorkspaceComponentsService: AddWorkspaceComponentsService
+  ) {}
+
+  async addComponents(
+    components: string[],
+    config: Config,
+    options: {
+      overwrite?: boolean;
+      silent?: boolean;
+      isNewProject?: boolean;
+      style?: string;
+    }
+  ) {
+    options = {
+      overwrite: false,
+      silent: false,
+      isNewProject: false,
+      style: 'index',
+      ...options,
+    };
+
+    const workspaceConfig = await getWorkspaceConfig(config);
+    if (
+      workspaceConfig &&
+      workspaceConfig.ui &&
+      workspaceConfig.ui.resolvedPaths.cwd !== config.resolvedPaths.cwd
+    ) {
+      return await this.addWorkspaceComponentsService.addWorkspaceComponents(
+        components,
+        config,
+        workspaceConfig,
+        {
+          ...options,
+          isRemote:
+            // 这个参数目前对我们的场景没有用，它主要用于处理从 shadcn/ui 聊天界面 分享的组件链接
+            components?.length === 1 && !!components[0].match(/\/chat\/b\//),
+        }
+      );
+    }
+
+    return await this.addProjectComponentsService.addProjectComponents(
+      components,
+      config,
+      options
+    );
+  }
+}
+
+@injectable()
+export class AddProjectComponentsService {
+  constructor(
+    @inject(GetProjectTailwindVersionFromConfigServiceId)
+    private readonly getProjectTailwindVersionFromConfigService: GetProjectTailwindVersionFromConfigService,
+    @inject(UpdateCssVarsServiceId)
+    private readonly updateCssVarsService: UpdateCssVarsService,
+    @inject(UpdateTailwindConfigServiceId)
+    private readonly updateTailwindConfigService: UpdateTailwindConfigService,
+    @inject(UpdateCssServiceId)
+    private readonly updateCssService: UpdateCssService,
+    @inject(RegistryResolveItemsTreeServiceId)
+    private readonly registryResolveItemsTreeService: RegistryResolveItemsTreeService,
+    @inject(UpdateFilesServiceId)
+    private readonly updateFilesService: UpdateFilesService
+  ) {}
+
+  async addProjectComponents(
+    components: string[],
+    config: z.infer<typeof configSchema>,
+    options: {
+      overwrite?: boolean;
+      silent?: boolean;
+      isNewProject?: boolean;
+      style?: string;
+    }
+  ) {
+    const registrySpinner = spinner(`Checking registry.`, {
+      silent: options.silent,
+    })?.start();
+    const tree =
+      await this.registryResolveItemsTreeService.registryResolveItemsTree(
+        components,
+        config
+      );
+    if (!tree) {
+      registrySpinner?.fail();
+      return handleError(
+        new Error('Failed to fetch components from registry.')
+      );
+    }
+    registrySpinner?.succeed();
+
+    const tailwindVersion =
+      await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
+        config
+      );
+
+    await this.updateTailwindConfigService.updateTailwindConfig(
+      tree.tailwind?.config,
+      config,
+      {
+        silent: options.silent,
+        tailwindVersion,
+      }
+    );
+
+    const overwriteCssVars = await shouldOverwriteCssVars(components, config);
+    await this.updateCssVarsService.updateCssVars(tree.cssVars, config, {
+      cleanupDefaultNextStyles: options.isNewProject,
+      silent: options.silent,
+      tailwindVersion,
+      tailwindConfig: tree.tailwind?.config,
+      overwriteCssVars,
+      initIndex: options.style ? options.style === 'index' : false,
+    });
+
+    // Add CSS updater
+    await this.updateCssService.updateCss(tree.css, config, {
+      silent: options.silent,
+    });
+
+    await updateDependencies(tree.dependencies, tree.devDependencies, config, {
+      silent: options.silent,
+    });
+    await this.updateFilesService.updateFiles(tree.files, config, {
+      overwrite: options.overwrite,
+      silent: options.silent,
+    });
+
+    if (tree.docs) {
+      logger.info(tree.docs);
+    }
+  }
+}
+
+@injectable()
+export class AddWorkspaceComponentsService {
+  constructor(
+    @inject(GetProjectTailwindVersionFromConfigServiceId)
+    private readonly getProjectTailwindVersionFromConfigService: GetProjectTailwindVersionFromConfigService,
+    @inject(UpdateCssServiceId)
+    private readonly updateCssService: UpdateCssService,
+    @inject(UpdateCssVarsServiceId)
+    private readonly updateCssVarsService: UpdateCssVarsService,
+    @inject(UpdateTailwindConfigServiceId)
+    private readonly updateTailwindConfigService: UpdateTailwindConfigService,
+    @inject(UpdateFilesServiceId)
+    private readonly updateFilesService: UpdateFilesService
+  ) {}
+
+  async addWorkspaceComponents(
+    components: string[],
+    config: z.infer<typeof configSchema>,
+    workspaceConfig: z.infer<typeof workspaceConfigSchema>,
+    options: {
+      overwrite?: boolean;
+      silent?: boolean;
+      isNewProject?: boolean;
+      isRemote?: boolean;
+      style?: string;
+    }
+  ) {
+    const registrySpinner = spinner(`Checking registry.`, {
+      silent: options.silent,
+    })?.start();
+    let registryItems = await resolveRegistryItems(components, config);
+    let result = await fetchRegistry(registryItems);
+    const payload = z.array(registryItemSchema).parse(result);
+    if (!payload) {
+      registrySpinner?.fail();
+      return handleError(
+        new Error('Failed to fetch components from registry.')
+      );
+    }
+    registrySpinner?.succeed();
+
+    const registryParentMap = getRegistryParentMap(payload);
+    const registryTypeAliasMap = getRegistryTypeAliasMap();
+
+    const filesCreated: string[] = [];
+    const filesUpdated: string[] = [];
+    const filesSkipped: string[] = [];
+
+    const rootSpinner = spinner(`Installing components.`)?.start();
+
+    for (const component of payload) {
+      const alias = registryTypeAliasMap.get(component.type);
+      const registryParent = registryParentMap.get(component.name);
+
+      // We don't support this type of component.
+      if (!alias) {
+        continue;
+      }
+
+      // A good start is ui for now.
+      // TODO: Add support for other types.
+      let targetConfig =
+        component.type === 'registry:ui' ||
+        registryParent?.type === 'registry:ui'
+          ? workspaceConfig.ui
+          : config;
+
+      const tailwindVersion =
+        await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
+          targetConfig
+        );
+
+      const workspaceRoot = findCommonRoot(
+        config.resolvedPaths.cwd,
+        targetConfig.resolvedPaths.ui
+      );
+      const packageRoot =
+        (await findPackageRoot(
+          workspaceRoot,
+          targetConfig.resolvedPaths.cwd
+        )) ?? targetConfig.resolvedPaths.cwd;
+
+      // 1. Update tailwind config.
+      if (component.tailwind?.config) {
+        await this.updateTailwindConfigService.updateTailwindConfig(
+          component.tailwind?.config,
+          targetConfig,
+          {
+            silent: true,
+            tailwindVersion,
+          }
+        );
+        filesUpdated.push(
+          path.relative(
+            workspaceRoot,
+            targetConfig.resolvedPaths.tailwindConfig
+          )
+        );
+      }
+
+      // 2. Update css vars.
+      if (component.cssVars) {
+        const overwriteCssVars = await shouldOverwriteCssVars(
+          components,
+          config
+        );
+        await this.updateCssVarsService.updateCssVars(
+          component.cssVars,
+          targetConfig,
+          {
+            silent: true,
+            tailwindVersion,
+            tailwindConfig: component.tailwind?.config,
+            overwriteCssVars,
+          }
+        );
+        filesUpdated.push(
+          path.relative(workspaceRoot, targetConfig.resolvedPaths.tailwindCss)
+        );
+      }
+
+      // 3. Update CSS
+      if (component.css) {
+        await this.updateCssService.updateCss(component.css, targetConfig, {
+          silent: true,
+        });
+        filesUpdated.push(
+          path.relative(workspaceRoot, targetConfig.resolvedPaths.tailwindCss)
+        );
+      }
+
+      // 4. Update dependencies.
+      await Promise.allSettled([
+        component.dependencies && component.dependencies.length
+          ? updateDependencies(component.dependencies, targetConfig, {
+              silent: true,
+            })
+          : Promise.resolve(),
+        component.devDependencies && component.devDependencies.length
+          ? updateDependencies(component.devDependencies, targetConfig, {
+              silent: true,
+              dev: true,
+            })
+          : Promise.resolve(),
+      ]);
+
+      // 5. Update files.
+      const files = await this.updateFilesService.updateFiles(
+        component.files,
+        targetConfig,
+        {
+          overwrite: options.overwrite,
+          silent: true,
+          rootSpinner,
+          isRemote: options.isRemote,
+        }
+      );
+
+      filesCreated.push(
+        ...files.filesCreated.map((file) =>
+          path.relative(workspaceRoot, path.join(packageRoot, file))
+        )
+      );
+      filesUpdated.push(
+        ...files.filesUpdated.map((file) =>
+          path.relative(workspaceRoot, path.join(packageRoot, file))
+        )
+      );
+      filesSkipped.push(
+        ...files.filesSkipped.map((file) =>
+          path.relative(workspaceRoot, path.join(packageRoot, file))
+        )
+      );
+    }
+
+    rootSpinner?.succeed();
+
+    // Sort files.
+    filesCreated.sort();
+    filesUpdated.sort();
+    filesSkipped.sort();
+
+    const hasUpdatedFiles = filesCreated.length || filesUpdated.length;
+    if (!hasUpdatedFiles && !filesSkipped.length) {
+      spinner(`No files updated.`, {
+        silent: options.silent,
+      })?.info();
+    }
+
+    if (filesCreated.length) {
+      spinner(
+        `Created ${filesCreated.length} ${
+          filesCreated.length === 1 ? 'file' : 'files'
+        }:`,
+        {
+          silent: options.silent,
+        }
+      )?.succeed();
+      for (const file of filesCreated) {
+        logger.log(`  - ${file}`);
+      }
+    }
+
+    if (filesUpdated.length) {
+      spinner(
+        `Updated ${filesUpdated.length} ${
+          filesUpdated.length === 1 ? 'file' : 'files'
+        }:`,
+        {
+          silent: options.silent,
+        }
+      )?.info();
+      for (const file of filesUpdated) {
+        logger.log(`  - ${file}`);
+      }
+    }
+
+    if (filesSkipped.length) {
+      spinner(
+        `Skipped ${filesSkipped.length} ${
+          filesUpdated.length === 1 ? 'file' : 'files'
+        }: (use --overwrite to overwrite)`,
+        {
+          silent: options.silent,
+        }
+      )?.info();
+      for (const file of filesSkipped) {
+        logger.log(`  - ${file}`);
+      }
+    }
+  }
+}
+
+async function shouldOverwriteCssVars(
+  components: z.infer<typeof registryItemSchema>['name'][],
+  config: z.infer<typeof configSchema>
+) {
+  const registryItems = await resolveRegistryItems(components, config);
+  const result = await fetchRegistry(registryItems);
+  const payload = z.array(registryItemSchema).parse(result);
+
+  return payload.some(
+    (component) =>
+      component.type === 'registry:theme' || component.type === 'registry:style'
+  );
+}
