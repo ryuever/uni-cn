@@ -73,6 +73,8 @@ export class AddComponentsService {
       ...options,
     };
 
+    console.log('>>>>>> options ', options)
+
     const workspaceConfig = await getWorkspaceConfig(config);
     if (
       workspaceConfig &&
@@ -92,6 +94,7 @@ export class AddComponentsService {
       );
     }
 
+    console.log('>>>>>> config ', config)
     return await this.addProjectComponentsService.addProjectComponents(
       components,
       config,

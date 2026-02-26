@@ -212,8 +212,6 @@ export class AddCommandService {
         });
       }
 
-      // createProject
-
       if (!config) {
         throw new Error(
           `Failed to read config at ${highlighter.info(options.cwd)}.`

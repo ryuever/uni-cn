@@ -70,6 +70,14 @@ pnpm test
 - **59 tests passing** across 15 test files
 - Excluded (pending DI/API adaptation): `update-tailwind-config`, `update-css-vars`, `update-tailwind-content`, `update-files`, `registry/api`, `transform-sfc` tests
 
+
+## Examples 
+
+### Node
+REGISTRY_URL=https://shadcn-vue.com/r npm run init -- --cwd /tmp/my-vue-app -y -d
+
+### Memfs
+
 ## License
 
 MIT

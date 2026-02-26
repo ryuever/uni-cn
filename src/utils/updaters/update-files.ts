@@ -100,6 +100,8 @@ export class UpdateFilesService {
           file.path
         );
 
+        console.log('>>>>>> tempPath ', tempPath)
+
         await this.fileSystemService.promisifyFs.mkdir(tempDir, {
           recursive: true,
         });

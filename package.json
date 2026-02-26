@@ -41,7 +41,8 @@
     "test": "vitest run",
     "test:update": "vitest run -u",
     "test:ui": "vitest --ui",
-    "add": "node ./dist/cli.mjs add"
+    "add": "node ./dist/cli.mjs add",
+    "init": "node ./dist/cli.mjs init"
   },
   "dependencies": {
     "commander": "^14.0.2",
