@@ -1,25 +1,24 @@
-import * as ERRORS from '@/delightless-vue/utils/errors';
+import * as ERRORS from '@/utils/errors';
 import {
   Container,
   createId,
   inject,
   injectable,
-  Registry,
-} from '@/delightless-vue/di';
-import type { PreFlightInitService } from '@/delightless-vue/preflights/preflight-init';
-import { PreFlightInitServiceId } from '@/delightless-vue/preflights/preflight-init';
+} from '@/di';
+import type { PreFlightInitService } from '@/preflights/preflight-init';
+import { PreFlightInitServiceId } from '@/preflights/preflight-init';
 import {
   BASE_COLORS,
   getRegistryBaseColors,
   getRegistryItem,
   getRegistryStyles,
   isUrl,
-} from '@/delightless-vue/registry/api';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
-import { AddComponentsServiceId } from '@/delightless-vue/utils/add-components';
-import type { AddComponentsService } from '@/delightless-vue/utils/add-components';
-import type { Config } from '@/delightless-vue/utils/get-config';
+} from '@/registry/api';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
+import { AddComponentsServiceId } from '@/utils/add-components';
+import type { AddComponentsService } from '@/utils/add-components';
+import type { Config } from '@/utils/get-config';
 import {
   DEFAULT_COMPONENTS,
   DEFAULT_TAILWIND_CONFIG,
@@ -28,23 +27,24 @@ import {
   getConfig,
   rawConfigSchema,
   resolveConfigPaths,
-} from '@/delightless-vue/utils/get-config';
+} from '@/utils/get-config';
 import type {
   GetProjectConfigService,
   GetProjectInfoService,
   GetProjectTailwindVersionFromConfigService,
-} from '@/delightless-vue/utils/get-project-info';
+} from '@/utils/get-project-info';
 import {
   GetProjectConfigServiceId,
   GetProjectInfoServiceId,
   GetProjectTailwindVersionFromConfigServiceId,
-} from '@/delightless-vue/utils/get-project-info';
-import { handleError } from '@/delightless-vue/utils/handle-error';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { logger } from '@/delightless-vue/utils/logger';
-import { spinner } from '@/delightless-vue/utils/spinner';
-import type { UpdateTailwindContentService } from '@/delightless-vue/utils/updaters/update-tailwind-content';
-import { UpdateTailwindContentServiceId } from '@/delightless-vue/utils/updaters/update-tailwind-content';
+} from '@/utils/get-project-info';
+import { initServiceModules } from '@/commands/initService';
+import { handleError } from '@/utils/handle-error';
+import { highlighter } from '@/utils/highlighter';
+import { logger } from '@/utils/logger';
+import { spinner } from '@/utils/spinner';
+import type { UpdateTailwindContentService } from '@/utils/updaters/update-tailwind-content';
+import { UpdateTailwindContentServiceId } from '@/utils/updaters/update-tailwind-content';
 
 import { z } from 'zod';
 
@@ -191,9 +191,6 @@ export class InitCommandService {
     return fullConfig;
   }
 }
-const modules = new Registry((bind) => {
-  bind(InitCommandServiceId).to(InitCommandService);
-});
 export const init = new Command()
   .name('init')
   .description('initialize your project and install dependencies')
@@ -244,9 +241,9 @@ export const init = new Command()
       // await runInit(options);
 
       const container = new Container();
-      container.load(modules);
+      container.load(initServiceModules);
       const runInitService = container.get(InitCommandServiceId);
-      await runInitService.execute(options);
+      await runInitService.runInit(options);
 
       logger.log(
         `${highlighter.success(

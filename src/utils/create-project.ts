@@ -1,8 +1,8 @@
-// import type { initOptionsSchema } from '@/delightless-vue/commands/init';
-// import { getPackageManager } from '@/delightless-vue/utils/get-package-manager';
-// import { highlighter } from '@/delightless-vue/utils/highlighter';
-// import { logger } from '@/delightless-vue/utils/logger';
-// import { spinner } from '@/delightless-vue/utils/spinner';
+// import type { initOptionsSchema } from '@/commands/init';
+// import { getPackageManager } from '@/utils/get-package-manager';
+// import { highlighter } from '@/utils/highlighter';
+// import { logger } from '@/utils/logger';
+// import { spinner } from '@/utils/spinner';
 
 // import type { z } from 'zod';
 

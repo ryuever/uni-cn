@@ -1,6 +1,6 @@
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
+import { createId, inject, injectable } from '@/di';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
 
 import path from 'pathe';
 

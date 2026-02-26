@@ -3,20 +3,20 @@ import {
   InitCommandServiceId,
   PromptForMinimalConfigService,
   PromptForMinimalConfigServiceId,
-} from '@/delightless-vue/commands/init';
-import { Container, Registry } from '@/delightless-vue/di';
+} from '@/commands/init';
+import { Container, Registry } from '@/di';
 import {
   PreFlightInitService,
   PreFlightInitServiceId,
-} from '@/delightless-vue/preflights/preflight-init';
+} from '@/preflights/preflight-init';
 import {
   RegistryGetThemeService,
   RegistryGetThemeServiceId,
   RegistryResolveItemsTreeService,
   RegistryResolveItemsTreeServiceId,
-} from '@/delightless-vue/registry/api';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import { FileSystemService } from '@/delightless-vue/services/file-system/NodeFileSystem';
+} from '@/registry/api';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import { NodeFileSystem } from '@/services/file-system/NodeFileSystem';
 import {
   AddComponentsService,
   AddComponentsServiceId,
@@ -24,11 +24,11 @@ import {
   AddProjectComponentsServiceId,
   AddWorkspaceComponentsService,
   AddWorkspaceComponentsServiceId,
-} from '@/delightless-vue/utils/add-components';
+} from '@/utils/add-components';
 import {
   GetPackageInfoService,
   GetPackageInfoServiceId,
-} from '@/delightless-vue/utils/get-package-info';
+} from '@/utils/get-package-info';
 import {
   GetProjectConfigService,
   GetProjectConfigServiceId,
@@ -42,31 +42,31 @@ import {
   GetTailwindVersionServiceId,
   GetTsConfigService,
   GetTsConfigServiceId,
-} from '@/delightless-vue/utils/get-project-info';
+} from '@/utils/get-project-info';
 import {
   TransformersService,
   TransformersServiceId,
-} from '@/delightless-vue/utils/transformers';
+} from '@/utils/transformers';
 import {
   TransformTwPrefixService,
   TransformTwPrefixServiceId,
-} from '@/delightless-vue/utils/transformers/transform-tw-prefix';
+} from '@/utils/transformers/transform-tw-prefix';
 import {
   UpdateCssService,
   UpdateCssServiceId,
-} from '@/delightless-vue/utils/updaters/update-css';
+} from '@/utils/updaters/update-css';
 import {
   TransformCssVarsService,
   TransformCssVarsServiceId,
   UpdateCssVarsService,
   UpdateCssVarsServiceId,
-} from '@/delightless-vue/utils/updaters/update-css-vars';
+} from '@/utils/updaters/update-css-vars';
 import {
   ResolveImportsService,
   ResolveImportsServiceId,
   UpdateFilesService,
   UpdateFilesServiceId,
-} from '@/delightless-vue/utils/updaters/update-files';
+} from '@/utils/updaters/update-files';
 import {
   AddTailwindConfigThemeService,
   AddTailwindConfigThemeServiceId,
@@ -78,13 +78,13 @@ import {
   TransformTailwindConfigServiceId,
   UpdateTailwindConfigService,
   UpdateTailwindConfigServiceId,
-} from '@/delightless-vue/utils/updaters/update-tailwind-config';
+} from '@/utils/updaters/update-tailwind-config';
 import {
   TransformTailwindContentService,
   TransformTailwindContentServiceId,
   UpdateTailwindContentService,
   UpdateTailwindContentServiceId,
-} from '@/delightless-vue/utils/updaters/update-tailwind-content';
+} from '@/utils/updaters/update-tailwind-content';
 
 export const initServiceModules = new Registry((bind) => {
   // bind(AddCommandServiceId).to(AddCommandService);
@@ -120,7 +120,7 @@ export const initServiceModules = new Registry((bind) => {
   bind(ParseObjectLiteralServiceId).to(ParseObjectLiteralService);
   bind(UpdateTailwindConfigServiceId).to(UpdateTailwindConfigService);
   bind(UpdateCssServiceId).to(UpdateCssService);
-  bind(FileSystemServiceId).to(FileSystemService);
+  bind(FileSystemServiceId).to(NodeFileSystem);
 });
 
 // const container = new Container();

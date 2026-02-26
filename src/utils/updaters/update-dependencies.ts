@@ -1,7 +1,7 @@
-import type { RegistryItem } from '@/delightless-vue/registry/schema';
-import type { Config } from '@/delightless-vue/utils/get-config';
-import { getPackageManager } from '@/delightless-vue/utils/get-package-manager';
-import { spinner } from '@/delightless-vue/utils/spinner';
+import type { RegistryItem } from '@/registry/schema';
+import type { Config } from '@/utils/get-config';
+import { getPackageManager } from '@/utils/get-package-manager';
+import { spinner } from '@/utils/spinner';
 
 // import { addDependency } from 'nypm';
 import { execa } from 'execa';

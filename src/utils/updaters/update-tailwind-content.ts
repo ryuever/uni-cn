@@ -1,14 +1,14 @@
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
-import type { Config } from '@/delightless-vue/utils/get-config';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { spinner } from '@/delightless-vue/utils/spinner';
-import type { CreateSourceFileService } from '@/delightless-vue/utils/updaters/update-tailwind-config';
+import { createId, inject, injectable } from '@/di';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
+import type { Config } from '@/utils/get-config';
+import { highlighter } from '@/utils/highlighter';
+import { spinner } from '@/utils/spinner';
+import type { CreateSourceFileService } from '@/utils/updaters/update-tailwind-config';
 import {
   _getQuoteChar,
   CreateSourceFileServiceId,
-} from '@/delightless-vue/utils/updaters/update-tailwind-config';
+} from '@/utils/updaters/update-tailwind-config';
 
 import path from 'pathe';
 

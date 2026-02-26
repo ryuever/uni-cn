@@ -1,12 +1,12 @@
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { getRegistryIcons } from '@/delightless-vue/registry/api';
-import type { registryBaseColorSchema } from '@/delightless-vue/registry/schema';
-import type { Config } from '@/delightless-vue/utils/get-config';
-import { transformCssVars } from '@/delightless-vue/utils/transformers/transform-css-vars';
-import { transformImport } from '@/delightless-vue/utils/transformers/transform-import';
-import { transformSFC } from '@/delightless-vue/utils/transformers/transform-sfc';
-import type { TransformTwPrefixService } from '@/delightless-vue/utils/transformers/transform-tw-prefix';
-import { TransformTwPrefixServiceId } from '@/delightless-vue/utils/transformers/transform-tw-prefix';
+import { createId, inject, injectable } from '@/di';
+import { getRegistryIcons } from '@/registry/api';
+import type { registryBaseColorSchema } from '@/registry/schema';
+import type { Config } from '@/utils/get-config';
+import { transformCssVars } from '@/utils/transformers/transform-css-vars';
+import { transformImport } from '@/utils/transformers/transform-import';
+import { transformSFC } from '@/utils/transformers/transform-sfc';
+import type { TransformTwPrefixService } from '@/utils/transformers/transform-tw-prefix';
+import { TransformTwPrefixServiceId } from '@/utils/transformers/transform-tw-prefix';
 
 import type { z } from 'zod';
 
@@ -44,15 +44,12 @@ export class TransformersService {
   }
 }
 
-// export async function transform(opts: TransformOpts) {
-//   const source = await transformSFC(opts);
-
-//   const registryIcons = await getRegistryIcons();
-
-//   return metaTransform(source, opts.filename, [
-//     transformImport(opts),
-//     transformCssVars(opts),
-//     await transformTwPrefix(opts),
-//     transformIcons(opts, registryIcons),
-//   ]).code;
-// }
+/** Standalone transform for testing - uses DI */
+export async function transform(opts: TransformOpts) {
+  const { Container } = await import('@/di');
+  const { initServiceModules } = await import('@/commands/initService');
+  const container = new Container();
+  container.load(initServiceModules);
+  const service = container.get(TransformersServiceId);
+  return service.transform(opts);
+}

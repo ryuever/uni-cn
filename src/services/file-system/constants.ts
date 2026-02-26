@@ -1,3 +1,3 @@
-import { createId } from '@/delightless-vue/di';
+import { createId } from '@/di';
 
 export const FileSystemServiceId = createId('file-system-service-id');

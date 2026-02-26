@@ -1,16 +1,16 @@
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
-import type { Framework } from '@/delightless-vue/utils/frameworks';
-import { FRAMEWORKS } from '@/delightless-vue/utils/frameworks';
-import type { Config, RawConfig } from '@/delightless-vue/utils/get-config';
+import { createId, inject, injectable } from '@/di';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
+import type { Framework } from '@/utils/frameworks';
+import { FRAMEWORKS } from '@/utils/frameworks';
+import type { Config, RawConfig } from '@/utils/get-config';
 import {
   getConfig,
   getTSConfig,
   resolveConfigPaths,
-} from '@/delightless-vue/utils/get-config';
-import type { GetPackageInfoService } from '@/delightless-vue/utils/get-package-info';
-import { GetPackageInfoServiceId } from '@/delightless-vue/utils/get-package-info';
+} from '@/utils/get-config';
+import type { GetPackageInfoService } from '@/utils/get-package-info';
+import { GetPackageInfoServiceId } from '@/utils/get-package-info';
 
 import { z } from 'zod';
 
@@ -397,6 +397,49 @@ export class GetProjectTailwindVersionFromConfigService {
 
     return projectInfo.tailwindVersion;
   }
+}
+
+/** Standalone getProjectInfo for testing - uses DI container */
+export async function getProjectInfo(cwd: string): Promise<{
+  framework: Framework;
+  isSrcDir: boolean;
+  typescript: boolean;
+  tailwindConfigFile: string | null;
+  tailwindCssFile: string | null;
+  tailwindVersion: TailwindVersion;
+  aliasPrefix: string | null;
+} | null> {
+  const { Container } = await import('@/di');
+  const { initServiceModules } = await import('@/commands/initService');
+  const container = new Container();
+  container.load(initServiceModules);
+  const service = container.get(GetProjectInfoServiceId);
+  const info = await service.getProjectInfo(cwd);
+  if (!info) return null;
+  const frameworkKey =
+    info.framework.name === 'nuxt' ? 'nuxt3' : info.framework.name;
+  return {
+    framework: (FRAMEWORKS as any)[frameworkKey] ?? info.framework,
+    isSrcDir:
+      (info.tailwindCssFile?.startsWith('src/') ?? false) ||
+      (info.tailwindCssFile?.includes('/src/') ?? false) ||
+      (info.tailwindConfigFile?.startsWith('src/') ?? false),
+    typescript: info.typescript,
+    tailwindConfigFile: info.tailwindConfigFile,
+    tailwindCssFile: info.tailwindCssFile,
+    tailwindVersion: info.tailwindVersion,
+    aliasPrefix: info.aliasPrefix,
+  };
+}
+
+/** Standalone getTailwindCssFile for testing */
+export async function getTailwindCssFile(cwd: string): Promise<string | null> {
+  const { Container } = await import('@/di');
+  const { initServiceModules } = await import('@/commands/initService');
+  const container = new Container();
+  container.load(initServiceModules);
+  const service = container.get(GetTailwindCssFileServiceId);
+  return service.getTailwindCssFile(cwd);
 }
 
 // export async function getProjectTailwindVersionFromConfig(

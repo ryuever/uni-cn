@@ -1,4 +1,4 @@
-import { resolveImport } from '@/delightless-vue/utils/resolve-import';
+import { resolveImport } from '@/utils/resolve-import';
 
 import { z } from 'zod';
 
@@ -221,6 +221,58 @@ function isAliasKey(
   return Object.keys(config.resolvedPaths)
     .filter((key) => key !== 'utils')
     .includes(key);
+}
+
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+/**
+ * Creates a config object with sensible defaults (for tests / universal registry items).
+ */
+export function createConfig(partial?: DeepPartial<Config>): Config {
+  const defaultConfig: Config = {
+    $schema: undefined,
+    style: '',
+    typescript: true,
+    tailwind: {
+      config: '',
+      css: '',
+      baseColor: '',
+      cssVariables: false,
+    },
+    aliases: {
+      components: '',
+      utils: '',
+    },
+    resolvedPaths: {
+      cwd: process.cwd(),
+      tailwindConfig: '',
+      tailwindCss: '',
+      utils: '',
+      components: '',
+      composables: '',
+      lib: '',
+      ui: '',
+    },
+  };
+  if (!partial) return defaultConfig;
+  return configSchema.parse({
+    ...defaultConfig,
+    ...partial,
+    resolvedPaths: {
+      ...defaultConfig.resolvedPaths,
+      ...(partial.resolvedPaths || {}),
+    },
+    tailwind: {
+      ...defaultConfig.tailwind,
+      ...(partial.tailwind || {}),
+    },
+    aliases: {
+      ...defaultConfig.aliases,
+      ...(partial.aliases || {}),
+    },
+  });
 }
 
 export function findCommonRoot(cwd: string, resolvedPath: string) {

@@ -1,7 +1,7 @@
 import type {
   registryItemSchema,
   registryItemTypeSchema,
-} from '@/delightless-vue/registry/schema';
+} from '@/registry/schema';
 
 import type { z } from 'zod';
 

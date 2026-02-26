@@ -15,6 +15,14 @@ export const FRAMEWORKS = {
       tailwind: 'https://tailwindcss.com/docs/guides/nuxtjs',
     },
   },
+  nuxt3: {
+    name: 'nuxt',
+    label: 'Nuxt',
+    links: {
+      installation: 'https://shadcn-vue.com/docs/installation/nuxt',
+      tailwind: 'https://tailwindcss.com/docs/guides/nuxtjs',
+    },
+  },
   astro: {
     name: 'astro',
     label: 'Astro',

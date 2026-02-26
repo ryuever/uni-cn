@@ -1,4 +1,4 @@
-import { highlighter } from '@/delightless-vue/utils/highlighter';
+import { highlighter } from '@/utils/highlighter';
 
 import consola from 'consola';
 

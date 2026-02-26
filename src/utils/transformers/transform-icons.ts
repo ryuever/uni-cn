@@ -1,4 +1,4 @@
-import { ICON_LIBRARIES } from '@/delightless-vue/utils/icon-libraries';
+import { ICON_LIBRARIES } from '@/utils/icon-libraries';
 
 import type { CodemodPlugin } from 'vue-metamorph';
 

@@ -1,34 +1,34 @@
 /* eslint-disable prefer-const */
-import { createId, inject, injectable } from '@/delightless-vue/di';
+import { createId, inject, injectable } from '@/di';
 import {
   fetchRegistry,
   getRegistryParentMap,
   getRegistryTypeAliasMap,
   RegistryResolveItemsTreeServiceId,
   resolveRegistryItems,
-} from '@/delightless-vue/registry/api';
-import type { RegistryResolveItemsTreeService } from '@/delightless-vue/registry/api';
-import { registryItemSchema } from '@/delightless-vue/registry/schema';
+} from '@/registry/api';
+import type { RegistryResolveItemsTreeService } from '@/registry/api';
+import { registryItemSchema } from '@/registry/schema';
 import type {
   Config,
   configSchema,
   workspaceConfigSchema,
-} from '@/delightless-vue/utils/get-config';
+} from '@/utils/get-config';
 import {
   findCommonRoot,
   findPackageRoot,
   getWorkspaceConfig,
-} from '@/delightless-vue/utils/get-config';
-import { handleError } from '@/delightless-vue/utils/handle-error';
-import { logger } from '@/delightless-vue/utils/logger';
-import { spinner } from '@/delightless-vue/utils/spinner';
-import type { UpdateCssService } from '@/delightless-vue/utils/updaters/update-css';
-import { UpdateCssServiceId } from '@/delightless-vue/utils/updaters/update-css';
-import { updateDependencies } from '@/delightless-vue/utils/updaters/update-dependencies';
-import type { UpdateFilesService } from '@/delightless-vue/utils/updaters/update-files';
-import { UpdateFilesServiceId } from '@/delightless-vue/utils/updaters/update-files';
-import type { UpdateTailwindConfigService } from '@/delightless-vue/utils/updaters/update-tailwind-config';
-import { UpdateTailwindConfigServiceId } from '@/delightless-vue/utils/updaters/update-tailwind-config';
+} from '@/utils/get-config';
+import { handleError } from '@/utils/handle-error';
+import { logger } from '@/utils/logger';
+import { spinner } from '@/utils/spinner';
+import type { UpdateCssService } from '@/utils/updaters/update-css';
+import { UpdateCssServiceId } from '@/utils/updaters/update-css';
+import { updateDependencies } from '@/utils/updaters/update-dependencies';
+import type { UpdateFilesService } from '@/utils/updaters/update-files';
+import { UpdateFilesServiceId } from '@/utils/updaters/update-files';
+import type { UpdateTailwindConfigService } from '@/utils/updaters/update-tailwind-config';
+import { UpdateTailwindConfigServiceId } from '@/utils/updaters/update-tailwind-config';
 
 import { z } from 'zod';
 

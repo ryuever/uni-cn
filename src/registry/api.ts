@@ -1,5 +1,5 @@
 /* eslint-disable prefer-const */
-import { createId, inject, injectable } from '@/delightless-vue/di';
+import { createId, inject, injectable } from '@/di';
 import {
   iconsSchema,
   registryBaseColorSchema,
@@ -7,14 +7,14 @@ import {
   registryItemSchema,
   registryResolvedItemsTreeSchema,
   stylesSchema,
-} from '@/delightless-vue/registry/schema';
+} from '@/registry/schema';
 import {
   type Config,
   getTargetStyleFromConfig,
-} from '@/delightless-vue/utils/get-config';
-import { handleError } from '@/delightless-vue/utils/handle-error';
-import { logger } from '@/delightless-vue/utils/logger';
-import { buildTailwindThemeColorsFromCssVars } from '@/delightless-vue/utils/updaters/update-tailwind-config';
+} from '@/utils/get-config';
+import { handleError } from '@/utils/handle-error';
+import { logger } from '@/utils/logger';
+import { buildTailwindThemeColorsFromCssVars } from '@/utils/updaters/update-tailwind-config';
 
 import { z } from 'zod';
 

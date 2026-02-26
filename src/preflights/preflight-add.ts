@@ -1,11 +1,11 @@
-import * as ERRORS from '@/delightless-vue/utils/errors';
-import type { addOptionsSchema } from '@/delightless-vue/commands/add';
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
-import { getConfig } from '@/delightless-vue/utils/get-config';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { logger } from '@/delightless-vue/utils/logger';
+import * as ERRORS from '@/utils/errors';
+import type { addOptionsSchema } from '@/commands/add';
+import { createId, inject, injectable } from '@/di';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
+import { getConfig } from '@/utils/get-config';
+import { highlighter } from '@/utils/highlighter';
+import { logger } from '@/utils/logger';
 
 import type { z } from 'zod';
 

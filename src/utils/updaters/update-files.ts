@@ -1,22 +1,22 @@
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { getRegistryBaseColor } from '@/delightless-vue/registry/api';
+import { createId, inject, injectable } from '@/di';
+import { getRegistryBaseColor } from '@/registry/api';
 import type {
   RegistryItem,
   registryItemFileSchema,
-} from '@/delightless-vue/registry/schema';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
-import { type Config, getTSConfig } from '@/delightless-vue/utils/get-config';
+} from '@/registry/schema';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
+import { type Config, getTSConfig } from '@/utils/get-config';
 import type {
   GetProjectInfoService,
   ProjectInfo,
-} from '@/delightless-vue/utils/get-project-info';
-import { GetProjectInfoServiceId } from '@/delightless-vue/utils/get-project-info';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { logger } from '@/delightless-vue/utils/logger';
-import { spinner } from '@/delightless-vue/utils/spinner';
-import { TransformersServiceId } from '@/delightless-vue/utils/transformers';
-import type { TransformersService } from '@/delightless-vue/utils/transformers';
+} from '@/utils/get-project-info';
+import { GetProjectInfoServiceId } from '@/utils/get-project-info';
+import { highlighter } from '@/utils/highlighter';
+import { logger } from '@/utils/logger';
+import { spinner } from '@/utils/spinner';
+import { TransformersServiceId } from '@/utils/transformers';
+import type { TransformersService } from '@/utils/transformers';
 
 import type { z } from 'zod';
 

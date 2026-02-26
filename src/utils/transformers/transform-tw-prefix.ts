@@ -1,4 +1,4 @@
-import { createId, inject, injectable } from '@/delightless-vue/di';
+import { createId, inject, injectable } from '@/di';
 
 import type { CodemodPlugin } from 'vue-metamorph';
 

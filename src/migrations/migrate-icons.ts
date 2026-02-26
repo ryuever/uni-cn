@@ -1,11 +1,11 @@
-import { getRegistryIcons } from '@/delightless-vue/registry/api';
-import type { iconsSchema } from '@/delightless-vue/registry/schema';
-import type { Config } from '@/delightless-vue/utils/get-config';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { ICON_LIBRARIES } from '@/delightless-vue/utils/icon-libraries';
-import { logger } from '@/delightless-vue/utils/logger';
-import { spinner } from '@/delightless-vue/utils/spinner';
-import { updateDependencies } from '@/delightless-vue/utils/updaters/update-dependencies';
+import { getRegistryIcons } from '@/registry/api';
+import type { iconsSchema } from '@/registry/schema';
+import type { Config } from '@/utils/get-config';
+import { highlighter } from '@/utils/highlighter';
+import { ICON_LIBRARIES } from '@/utils/icon-libraries';
+import { logger } from '@/utils/logger';
+import { spinner } from '@/utils/spinner';
+import { updateDependencies } from '@/utils/updaters/update-dependencies';
 
 import type { z } from 'zod';
 

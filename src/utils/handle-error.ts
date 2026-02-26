@@ -1,5 +1,5 @@
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { logger } from '@/delightless-vue/utils/logger';
+import { highlighter } from '@/utils/highlighter';
+import { logger } from '@/utils/logger';
 
 import { z } from 'zod';
 

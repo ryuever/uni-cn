@@ -1,4 +1,4 @@
-import type { registryBaseColorSchema } from '@/delightless-vue/registry/schema';
+import type { registryBaseColorSchema } from '@/registry/schema';
 
 import type * as z from 'zod';
 

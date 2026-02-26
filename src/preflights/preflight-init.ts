@@ -1,13 +1,13 @@
-import * as ERRORS from '@/delightless-vue/utils/errors';
-import type { initOptionsSchema } from '@/delightless-vue/commands/init';
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
-import type { GetProjectInfoService } from '@/delightless-vue/utils/get-project-info';
-import { GetProjectInfoServiceId } from '@/delightless-vue/utils/get-project-info';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { logger } from '@/delightless-vue/utils/logger';
-import { spinner } from '@/delightless-vue/utils/spinner';
+import * as ERRORS from '@/utils/errors';
+import type { initOptionsSchema } from '@/commands/init';
+import { createId, inject, injectable } from '@/di';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
+import type { GetProjectInfoService } from '@/utils/get-project-info';
+import { GetProjectInfoServiceId } from '@/utils/get-project-info';
+import { highlighter } from '@/utils/highlighter';
+import { logger } from '@/utils/logger';
+import { spinner } from '@/utils/spinner';
 
 import type { z } from 'zod';
 

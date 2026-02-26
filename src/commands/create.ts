@@ -1,6 +1,6 @@
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { CreateTemplateFilesServiceId } from '@/delightless-vue/utils/updaters/create-template-files';
-import type { CreateTemplateFilesService } from '@/delightless-vue/utils/updaters/create-template-files';
+import { createId, inject, injectable } from '@/di';
+import { CreateTemplateFilesServiceId } from '@/utils/updaters/create-template-files';
+import type { CreateTemplateFilesService } from '@/utils/updaters/create-template-files';
 
 import { z } from 'zod';
 

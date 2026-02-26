@@ -1,17 +1,17 @@
 // import type { TransformCssVarsService } from './update-css-vars';
-import { createId, inject, injectable } from '@/delightless-vue/di';
+import { createId, inject, injectable } from '@/di';
 import type {
   registryItemCssVarsSchema,
   registryItemTailwindSchema,
-} from '@/delightless-vue/registry/schema';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
-import type { Config } from '@/delightless-vue/utils/get-config';
-import type { GetPackageInfoService } from '@/delightless-vue/utils/get-package-info';
-import { GetPackageInfoServiceId } from '@/delightless-vue/utils/get-package-info';
-import type { TailwindVersion } from '@/delightless-vue/utils/get-project-info';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { spinner } from '@/delightless-vue/utils/spinner';
+} from '@/registry/schema';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
+import type { Config } from '@/utils/get-config';
+import type { GetPackageInfoService } from '@/utils/get-package-info';
+import { GetPackageInfoServiceId } from '@/utils/get-package-info';
+import type { TailwindVersion } from '@/utils/get-project-info';
+import { highlighter } from '@/utils/highlighter';
+import { spinner } from '@/utils/spinner';
 
 import { z } from 'zod';
 

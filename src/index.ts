@@ -1,39 +1,34 @@
-#!/usr/bin/env node
-import { add } from '@/delightless-vue/commands/add';
-// import { build } from '@/delightless-vue/commands/build';
-// import { diff } from '@/delightless-vue/commands/diff';
-// import { info } from '@/delightless-vue/commands/info';
-import { init } from '@/delightless-vue/commands/init';
-
-// import { migrate } from '@/delightless-vue/commands/migrate';
-
-import { Command } from 'commander';
-
-// import packageJson from '../package.json';
-
-process.on('SIGINT', () => process.exit(0));
-process.on('SIGTERM', () => process.exit(0));
-
-async function main() {
-  const program = new Command()
-    .name('delightless-vue')
-    .description('add components and dependencies to your project')
-    .version(
-      // packageJson.version || '1.0.0',
-      '1.0.0',
-      '-v, --version',
-      'display the version number'
-    );
-
-  program.addCommand(init).addCommand(add);
-  // .addCommand(diff)
-  // .addCommand(migrate)
-  // .addCommand(info)
-  // .addCommand(build);
-
-  program.parse();
-}
-
-main();
+import { Container } from '@/di';
+import { initServiceModules } from './commands/initService';
+import type { initOptionsSchema } from './commands/init';
+import { InitCommandServiceId } from './commands/init';
+import type { z } from 'zod';
 
 export * from './registry/api';
+export * from './registry/schema';
+
+/** Run init with options (cwd, yes, defaults, etc.) */
+export async function runInit(
+  optionsOrConfig:
+    | (z.infer<typeof initOptionsSchema> & { skipPreflight?: boolean })
+    | import('./utils/get-config').Config
+) {
+  const container = new Container();
+  container.load(initServiceModules);
+  const service = container.get(InitCommandServiceId);
+  const hasResolvedPaths = optionsOrConfig && 'resolvedPaths' in optionsOrConfig;
+  const options = hasResolvedPaths
+    ? {
+        cwd: (optionsOrConfig as any).resolvedPaths.cwd,
+        yes: true,
+        defaults: true,
+        force: true,
+        silent: true,
+        isNewProject: false,
+        style: 'index',
+        cssVariables: true,
+        skipPreflight: true,
+      }
+    : (optionsOrConfig as any);
+  return service.runInit(options);
+}

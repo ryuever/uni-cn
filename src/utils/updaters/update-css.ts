@@ -1,10 +1,10 @@
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import type { registryItemCssSchema } from '@/delightless-vue/registry/schema';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
-import type { Config } from '@/delightless-vue/utils/get-config';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { spinner } from '@/delightless-vue/utils/spinner';
+import { createId, inject, injectable } from '@/di';
+import type { registryItemCssSchema } from '@/registry/schema';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
+import type { Config } from '@/utils/get-config';
+import { highlighter } from '@/utils/highlighter';
+import { spinner } from '@/utils/spinner';
 
 import type { z } from 'zod';
 

@@ -1,13 +1,14 @@
-import * as ERRORS from '@/delightless-vue/utils/errors';
-import { Container, createId, inject, injectable } from '@/delightless-vue/di';
+import * as ERRORS from '@/utils/errors';
+import { addServiceModules } from '@/commands/addService';
+import { Container, createId, inject, injectable } from '@/di';
 import {
   getRegistryIndex,
   getRegistryItem,
   isUrl,
-} from '@/delightless-vue/registry/api';
-import { handleError } from '@/delightless-vue/utils/handle-error';
-import { highlighter } from '@/delightless-vue/utils/highlighter';
-import { logger } from '@/delightless-vue/utils/logger';
+} from '@/registry/api';
+import { handleError } from '@/utils/handle-error';
+import { highlighter } from '@/utils/highlighter';
+import { logger } from '@/utils/logger';
 
 import { z } from 'zod';
 
@@ -82,7 +83,26 @@ export const add = new Command()
   .option('--css-variables', 'use css variables for theming.', true)
   .option('--no-css-variables', 'do not use css variables for theming.')
   .action(async (components, opts) => {
-    const container = new Container();
+    try {
+      const options = addOptionsSchema.parse({
+        components: components ?? [],
+        cwd: path.resolve(opts.cwd),
+        yes: opts.yes,
+        overwrite: opts.overwrite,
+        all: opts.all,
+        path: opts.path,
+        silent: opts.silent,
+        srcDir: opts.srcDir,
+        cssVariables: opts.cssVariables,
+      });
+      const container = new Container();
+      container.load(addServiceModules);
+      const addService = container.get(AddCommandServiceId);
+      await addService.runAdd(options.components ?? [], options);
+    } catch (error) {
+      logger.break();
+      handleError(error);
+    }
   });
 
 export const AddCommandServiceId = createId('add-command-service-id');

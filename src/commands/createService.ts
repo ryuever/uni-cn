@@ -1,21 +1,21 @@
 import {
   CreateCommandService,
   CreateCommandServiceId,
-} from '@/delightless-vue/commands/create';
-import { Registry } from '@/delightless-vue/di';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import { FileSystemService } from '@/delightless-vue/services/file-system/NodeFileSystem';
+} from '@/commands/create';
+import { Registry } from '@/di';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import { NodeFileSystem } from '@/services/file-system/NodeFileSystem';
 import {
   CreateTemplateFilesService,
   CreateTemplateFilesServiceId,
-} from '@/delightless-vue/utils/updaters/create-template-files';
-// import { TransformTailwindConfigService } from '@/delightless-vue/utils/updaters/update-tailwind-config';
-// import { TransformTailwindConfigServiceId } from '@/delightless-vue/utils/updaters/update-tailwind-config';
+} from '@/utils/updaters/create-template-files';
+// import { TransformTailwindConfigService } from '@/utils/updaters/update-tailwind-config';
+// import { TransformTailwindConfigServiceId } from '@/utils/updaters/update-tailwind-config';
 
 export const createServiceModules = new Registry((bind) => {
   bind(CreateCommandServiceId).to(CreateCommandService);
   bind(CreateTemplateFilesServiceId).to(CreateTemplateFilesService);
-  bind(FileSystemServiceId).to(FileSystemService);
+  bind(FileSystemServiceId).to(NodeFileSystem);
   // bind(TransformTailwindConfigServiceId).to(TransformTailwindConfigService);
 });
 

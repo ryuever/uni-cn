@@ -1,8 +1,8 @@
-import type { createOptionsSchema } from '@/delightless-vue/commands/create';
-import { createId, inject, injectable } from '@/delightless-vue/di';
-import { getRegistryTemplates } from '@/delightless-vue/registry/api';
-import { FileSystemServiceId } from '@/delightless-vue/services/file-system/constants';
-import type { IFileSystemService } from '@/delightless-vue/services/file-system/types';
+import type { createOptionsSchema } from '@/commands/create';
+import { createId, inject, injectable } from '@/di';
+import { getRegistryTemplates } from '@/registry/api';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
 
 import type { z } from 'zod';
 
@@ -28,7 +28,6 @@ export class CreateTemplateFilesService {
 
     const templateFile = await getRegistryTemplates(template, style);
 
-    console.log('>>>>>> templateFile ', !!templateFile)
 
     if (!templateFile) {
       throw new Error(`>>>>>>>> Template ${template} not found`);
@@ -36,7 +35,6 @@ export class CreateTemplateFilesService {
 
     const templateFiles = templateFile.files;
 
-    console.log('>>>>>> templateFiles ', templateFiles)
 
     for (const file of templateFiles) {
       try {
@@ -46,12 +44,10 @@ export class CreateTemplateFilesService {
         // 删除 templateName
         filePathParts.shift();
 
-        console.log('>>>>>> file ', this.fileSystemService, this.fileSystemService.promisifyFs, path, file?.path, filePathParts,)
 
         const filePath = path.join(cwd, projectName, filePathParts.join('/'));
         const targetDir = path.dirname(filePath);
 
-        console.log('>>>>>> filepath ', filePath)
 
         await this.fileSystemService.promisifyFs.mkdir(targetDir, {
           recursive: true,
