@@ -122,20 +122,3 @@ export const initServiceModules = new Registry((bind) => {
   bind(UpdateCssServiceId).to(UpdateCssService);
   bind(FileSystemServiceId).to(NodeFileSystem);
 });
-
-// const container = new Container();
-// container.load(modules);
-
-// export const initService: InitCommandService =
-//   container.get(InitCommandServiceId);
-
-// initService.runInit({
-//   cwd: '/Users/ryu/Documents/code/red/delightless-test',
-//   yes: true,
-//   defaults: true,
-//   silent: true,
-//   force: true,
-//   isNewProject: true,
-//   style: 'default',
-//   cssVariables: false,
-// });
