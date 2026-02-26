@@ -40,7 +40,8 @@
     "lint:fix": "eslint --fix .",
     "test": "vitest run",
     "test:update": "vitest run -u",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "add": "node ./dist/cli.mjs add"
   },
   "dependencies": {
     "commander": "^14.0.2",

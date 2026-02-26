@@ -14,4 +14,6 @@ export default defineConfig({
   alias: {
     '@': './src',
   },
+  // Vue compiler packages have fragile internal structure; bundling breaks makeMap etc.
+  external: ['vue-metamorph', '@unovue/detypes', /^@vue\//],
 })
