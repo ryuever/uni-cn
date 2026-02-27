@@ -22,9 +22,10 @@ export class TransformTwPrefixService {
 
   async transformTwPrefix(opts: TransformOpts): Promise<CodemodPlugin> {
     const tailwindVersion =
-      await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
+      opts.tailwindVersion ??
+      (await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
         opts.config
-      );
+      ));
 
     return {
       type: 'codemod',

@@ -13,7 +13,7 @@ import type { Volume } from 'memfs';
 /** Default RawConfig for fs-memfs-vue (Vite + Vue + Tailwind v4) */
 export const defaultMemfsRawConfig: RawConfig = {
   $schema: 'https://shadcn-vue.com/schema.json',
-  style: 'index',
+  style: 'new-york',
   typescript: true,
   tailwind: {
     config: '',

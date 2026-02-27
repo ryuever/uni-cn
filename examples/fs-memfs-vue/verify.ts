@@ -1,9 +1,10 @@
 /**
- * Verify: read content.ts -> populate memfs -> runInitWithVolume -> assert files exist
+ * Verify: read content.ts -> populate memfs -> runInitWithVolume -> runAddWithVolume (button) -> assert files exist
  */
 import type { Volume } from 'memfs';
 import { getPopulatedVolume } from './populate-memfs';
 import { runInitWithVolume } from './runInit';
+import { runAddWithVolume } from './runAdd';
 
 const ROOT = '/project';
 
@@ -46,6 +47,31 @@ console.log('[verify] runInitWithVolume done, components.json added');
 const componentsJson = vol.readFileSync(`${root}/components.json`, 'utf-8');
 const componentsConfig = JSON.parse(componentsJson as string);
 console.log('[verify] components.json style:', componentsConfig.style);
+
+// Run add button to add button component to vol
+await runAddWithVolume(vol, root, ['button']);
+console.log('[verify] runAddWithVolume(button) done');
+
+// Verify button component files exist in memfs
+const buttonVuePath = `${root}/src/components/ui/button/Button.vue`;
+const buttonIndexPath = `${root}/src/components/ui/button/index.ts`;
+if (!vol.existsSync(buttonVuePath)) {
+  throw new Error(`Expected button component at ${buttonVuePath} but file missing`);
+}
+if (!vol.existsSync(buttonIndexPath)) {
+  throw new Error(`Expected button index at ${buttonIndexPath} but file missing`);
+}
+const buttonVueContent = vol.readFileSync(buttonVuePath, 'utf-8') as string;
+const buttonIndexContent = vol.readFileSync(buttonIndexPath, 'utf-8') as string;
+console.log('[verify] button Button.vue exists, length:', buttonVueContent.length);
+console.log('[verify] button index.ts exists, length:', buttonIndexContent.length);
+if (!buttonVueContent.includes('buttonVariants')) {
+  throw new Error('Expected Button.vue to contain buttonVariants');
+}
+if (!buttonIndexContent.includes('export { default as Button }')) {
+  throw new Error('Expected button index.ts to export Button');
+}
+console.log('[verify] button component content verified');
 
 console.log('\n[verify] tree:');
 console.log(root + '/');

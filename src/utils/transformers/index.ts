@@ -20,6 +20,8 @@ export interface TransformOpts {
   config: Config;
   baseColor?: z.infer<typeof registryBaseColorSchema>;
   isRemote?: boolean;
+  /** When provided, skip getProjectInfo (uses Node fs). For memfs. */
+  tailwindVersion?: 'v3' | 'v4';
 }
 
 export const TransformersServiceId = createId('transformers-service-id');

@@ -19,6 +19,7 @@ import {
   findPackageRoot,
   getWorkspaceConfig,
 } from '@/utils/get-config';
+import { FRAMEWORKS } from '@/utils/frameworks';
 import { handleError } from '@/utils/handle-error';
 import { logger } from '@/utils/logger';
 import { spinner } from '@/utils/spinner';
@@ -65,6 +66,8 @@ export class AddComponentsService {
       style?: string;
       /** When true, skip updateDependencies (npm install). For memfs. */
       skipDependenciesInstall?: boolean;
+      /** When provided, skip getProjectInfo (uses Node fs). For memfs. */
+      tailwindVersion?: 'v3' | 'v4';
     }
   ) {
     options = {
@@ -128,6 +131,8 @@ export class AddProjectComponentsService {
       isNewProject?: boolean;
       style?: string;
       skipDependenciesInstall?: boolean;
+      /** When provided, skip getProjectInfo (uses Node fs). For memfs. */
+      tailwindVersion?: 'v3' | 'v4';
     }
   ) {
     const registrySpinner = spinner(`Checking registry.`, {
@@ -147,9 +152,10 @@ export class AddProjectComponentsService {
     registrySpinner?.succeed();
 
     const tailwindVersion =
-      await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
+      options.tailwindVersion ??
+      (await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
         config
-      );
+      ));
 
     await this.updateTailwindConfigService.updateTailwindConfig(
       tree.tailwind?.config,
@@ -183,9 +189,21 @@ export class AddProjectComponentsService {
         silent: options.silent,
       });
     }
+    const memfsMode = options.tailwindVersion !== undefined;
     await this.updateFilesService.updateFiles(tree.files, config, {
       overwrite: options.overwrite,
       silent: options.silent,
+      ...(memfsMode && {
+        projectInfo: {
+          framework: FRAMEWORKS.vite,
+          typescript: true,
+          tailwindConfigFile: null,
+          tailwindCssFile: 'src/style.css',
+          tailwindVersion: options.tailwindVersion ?? 'v4',
+          aliasPrefix: '@',
+        },
+        skipImportResolution: true,
+      }),
     });
 
     if (tree.docs) {

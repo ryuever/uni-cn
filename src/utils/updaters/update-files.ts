@@ -52,6 +52,10 @@ export class UpdateFilesService {
       silent?: boolean;
       rootSpinner?: ReturnType<typeof spinner>;
       isRemote?: boolean;
+      /** When provided, use instead of getProjectInfo (uses Node fs). For memfs. */
+      projectInfo?: import('@/utils/get-project-info').ProjectInfo | null;
+      /** When true, skip import resolution (uses getTSConfig/Node fs). For memfs. */
+      skipImportResolution?: boolean;
     }
   ) {
     if (!files?.length) {
@@ -66,16 +70,20 @@ export class UpdateFilesService {
       force: false,
       silent: false,
       isRemote: false,
+      skipImportResolution: false,
       ...options,
     };
     const filesCreatedSpinner = spinner(`Updating files.`, {
       silent: options.silent,
     })?.start();
 
-    const [projectInfo, baseColor] = await Promise.all([
-      this.getProjectInfoService.getProjectInfo(config.resolvedPaths.cwd),
-      getRegistryBaseColor(config.tailwind.baseColor),
-    ]);
+    const projectInfo =
+      options.projectInfo !== undefined
+        ? options.projectInfo
+        : await this.getProjectInfoService.getProjectInfo(
+            config.resolvedPaths.cwd
+          );
+    const baseColor = await getRegistryBaseColor(config.tailwind.baseColor);
 
     let filesCreated: string[] = [];
     let filesUpdated: string[] = [];
@@ -169,6 +177,10 @@ export class UpdateFilesService {
         config,
         baseColor,
         isRemote: options.isRemote,
+        ...(projectInfo?.tailwindVersion === 'v3' ||
+        projectInfo?.tailwindVersion === 'v4'
+          ? { tailwindVersion: projectInfo.tailwindVersion }
+          : {}),
       });
 
       // Skip the file if it already exists and the content is the same.
@@ -259,10 +271,9 @@ export class UpdateFilesService {
     }
 
     const allFiles = [...filesCreated, ...filesUpdated, ...filesSkipped];
-    const updatedFiles = await this.resolveImportsService.resolveImports(
-      allFiles,
-      config
-    );
+    const updatedFiles = options.skipImportResolution
+      ? []
+      : await this.resolveImportsService.resolveImports(allFiles, config);
 
     // Let's update filesUpdated with the updated files.
     filesUpdated.push(...updatedFiles);

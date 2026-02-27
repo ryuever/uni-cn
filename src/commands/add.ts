@@ -52,6 +52,8 @@ export const addOptionsSchema = z.object({
   silent: z.boolean(),
   srcDir: z.boolean().optional(),
   cssVariables: z.boolean(),
+  /** When true, skip npm install. For memfs. */
+  skipDependenciesInstall: z.boolean().optional(),
 });
 
 export const add = new Command()
@@ -122,9 +124,9 @@ export class AddCommandService {
   async runAdd(components: string[], opts: z.infer<typeof addOptionsSchema>) {
     try {
       const options = addOptionsSchema.parse({
+        ...opts,
         components,
         cwd: path.resolve(opts.cwd),
-        ...opts,
       });
 
       let itemType: z.infer<typeof registryItemTypeSchema> | undefined;
