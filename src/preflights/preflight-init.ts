@@ -2,6 +2,8 @@ import * as ERRORS from '@/utils/errors';
 import type { initOptionsSchema } from '@/commands/init';
 import { createId, inject, injectable } from '@x-oasis/di';
 import { FileSystemServiceId } from '@/services/file-system/constants';
+import { IExitServiceId } from '@/services/env';
+import type { IExitService } from '@/services/env';
 import type { IFileSystemService } from '@/services/file-system/types';
 import type { GetProjectInfoService } from '@/utils/get-project-info';
 import { GetProjectInfoServiceId } from '@/utils/get-project-info';
@@ -20,7 +22,9 @@ export class PreFlightInitService {
     @inject(FileSystemServiceId)
     private readonly fileSystemService: IFileSystemService,
     @inject(GetProjectInfoServiceId)
-    private readonly getProjectInfoService: GetProjectInfoService
+    private readonly getProjectInfoService: GetProjectInfoService,
+    @inject(IExitServiceId)
+    private readonly exitService: IExitService
   ) {}
 
   async preFlightInit(options: z.infer<typeof initOptionsSchema>) {
@@ -63,7 +67,7 @@ export class PreFlightInitService {
         )} file and run ${highlighter.info('init')} again.`
       );
       logger.break();
-      process.exit(1);
+      this.exitService.exit(1);
     }
 
     projectSpinner?.succeed();
@@ -89,7 +93,7 @@ export class PreFlightInitService {
         );
       }
       logger.break();
-      process.exit(1);
+      this.exitService.exit(1);
     }
     frameworkSpinner?.succeed(
       `Verifying framework. Found ${highlighter.info(
@@ -171,7 +175,7 @@ export class PreFlightInitService {
       }
 
       logger.break();
-      process.exit(1);
+      this.exitService.exit(1);
     }
 
     return {

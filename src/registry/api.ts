@@ -22,7 +22,6 @@ import path from 'pathe';
 
 import deepmerge from 'deepmerge';
 import { ofetch } from 'ofetch';
-import { ProxyAgent } from 'undici';
 
 import {
   isDelightlessWorkspaceProject,
@@ -32,17 +31,35 @@ import type { GetProjectTailwindVersionFromConfigService } from '../utils/get-pr
 import { GetProjectTailwindVersionFromConfigServiceId } from '../utils/get-project-info';
 import { highlighter } from '../utils/highlighter';
 
-// const REGISTRY_URL =
-//   process.env.REGISTRY_URL ?? 'https://fe-docs.devops.xiaohongshu.com/xswr/r';
-const REGISTRY_URL = process.env.REGISTRY_URL ?? 'https://shadcn-vue.com/r';
+const REGISTRY_URL =
+  (typeof process !== 'undefined' && process.env?.REGISTRY_URL) ??
+  'https://shadcn-vue.com/r';
 
 export const RegistryGetThemeServiceId = createId(
   'registry-get-theme-service-id'
 );
 
-const agent = process.env.https_proxy
-  ? new ProxyAgent(process.env.https_proxy)
-  : undefined;
+/** ProxyAgent is Node-only; in browser we use native fetch (dispatcher: undefined) */
+let _agent: InstanceType<typeof import('undici').ProxyAgent> | undefined | null =
+  null;
+async function getAgent() {
+  if (_agent !== null) return _agent;
+  if (
+    typeof window !== 'undefined' ||
+    typeof process === 'undefined' ||
+    !process.env?.https_proxy
+  ) {
+    _agent = undefined;
+    return undefined;
+  }
+  try {
+    const { ProxyAgent } = await import('undici');
+    _agent = new ProxyAgent(process.env.https_proxy);
+  } catch {
+    _agent = undefined;
+  }
+  return _agent;
+}
 
 const registryCache = new Map<string, Promise<any>>();
 
@@ -222,6 +239,7 @@ export async function getItemTargetPath(
 
 export async function fetchRegistry(paths: string[]) {
   try {
+    const dispatcher = await getAgent();
     const results = await Promise.all(
       paths.map(async (path) => {
         const url = getRegistryUrl(path);
@@ -233,7 +251,7 @@ export async function fetchRegistry(paths: string[]) {
 
         // Store the promise in the cache before awaiting
         const fetchPromise = ofetch(url, {
-          dispatcher: agent,
+          dispatcher,
           parseResponse: JSON.parse,
         }).catch((error) => {
           // Handle ofetch errors

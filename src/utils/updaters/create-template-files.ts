@@ -6,7 +6,7 @@ import type { IFileSystemService } from '@/services/file-system/types';
 
 import type { z } from 'zod';
 
-import * as path from 'path'
+import path from 'pathe'
 
 export const CreateTemplateFilesServiceId = createId(
   'create-template-files-service-id'

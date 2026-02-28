@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     'src/index.ts',
     'src/cli.ts',
+    'src/browser/index.ts',
     'src/registry/index.ts',
     'src/registry/schema.ts',
   ],

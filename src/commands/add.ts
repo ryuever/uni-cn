@@ -7,6 +7,7 @@ import {
   isUrl,
 } from '@/registry/api';
 import { handleError } from '@/utils/handle-error';
+import { exitOrThrow } from '@/utils/exit';
 import { highlighter } from '@/utils/highlighter';
 import { logger } from '@/utils/logger';
 
@@ -26,6 +27,8 @@ import type { GetProjectInfoService } from '../utils/get-project-info';
 import { GetProjectInfoServiceId } from '../utils/get-project-info';
 import type { InitCommandService } from './init';
 import { InitCommandServiceId } from './init';
+import { IExitServiceId } from '@/services/env';
+import type { IExitService } from '@/services/env';
 
 const DEPRECATED_COMPONENTS = [
   {
@@ -118,7 +121,9 @@ export class AddCommandService {
     @inject(PreFlightAddServiceId)
     private readonly preFlightAddService: PreFlightAddService,
     @inject(InitCommandServiceId)
-    private readonly initCommandService: InitCommandService
+    private readonly initCommandService: InitCommandService,
+    @inject(IExitServiceId)
+    private readonly exitService: IExitService
   ) {}
 
   async runAdd(components: string[], opts: z.infer<typeof addOptionsSchema>) {
@@ -155,7 +160,7 @@ export class AddCommandService {
           logger.break();
           logger.log(`Installation cancelled.`);
           logger.break();
-          process.exit(1);
+          this.exitService.exit(1);
         }
       }
 
@@ -177,7 +182,7 @@ export class AddCommandService {
             logger.warn(highlighter.warn(component.message));
           });
           logger.break();
-          process.exit(1);
+          this.exitService.exit(1);
         }
       }
 
@@ -197,7 +202,7 @@ export class AddCommandService {
 
         if (!proceed) {
           logger.break();
-          process.exit(1);
+          this.exitService.exit(1);
         }
 
         config = await this.initCommandService.runInit({
@@ -279,7 +284,7 @@ async function promptForRegistryComponents(
   if (!components?.length) {
     logger.warn('No components selected. Exiting.');
     logger.info('');
-    process.exit(1);
+    exitOrThrow(1);
   }
 
   const result = z.array(z.string()).safeParse(components);

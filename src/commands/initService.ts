@@ -6,6 +6,14 @@ import {
 } from '@/commands/init';
 import { Container, Registry } from '@x-oasis/di';
 import {
+  ICwdServiceId,
+  IExitServiceId,
+  ITempDirServiceId,
+  NodeCwdService,
+  NodeExitService,
+  NodeTempDirService,
+} from '@/services/env';
+import {
   PreFlightInitService,
   PreFlightInitServiceId,
 } from '@/preflights/preflight-init';
@@ -121,4 +129,7 @@ export const initServiceModules = new Registry((bind) => {
   bind(UpdateTailwindConfigServiceId).to(UpdateTailwindConfigService);
   bind(UpdateCssServiceId).to(UpdateCssService);
   bind(FileSystemServiceId).to(NodeFileSystem);
+  bind(ICwdServiceId).to(NodeCwdService);
+  bind(ITempDirServiceId).to(NodeTempDirService);
+  bind(IExitServiceId).to(NodeExitService);
 });

@@ -5,6 +5,8 @@ import type {
 } from '@/registry/schema'
 import { FileSystemServiceId } from '@/services/file-system/constants'
 import type { IFileSystemService } from '@/services/file-system/types'
+import { ITempDirServiceId } from '@/services/env'
+import type { ITempDirService } from '@/services/env'
 import type { Config } from '@/utils/get-config'
 import type { TailwindVersion } from '@/utils/get-project-info'
 import { highlighter } from '@/utils/highlighter'
@@ -17,8 +19,6 @@ import path from 'pathe'
 import type { Config as TailwindConfig } from 'tailwindcss'
 
 import deepmerge from 'deepmerge'
-// import { promises as fs } from 'node:fs';
-import { tmpdir } from 'node:os'
 import objectToString from 'stringify-object'
 import type {
   ArrayLiteralExpression,
@@ -52,17 +52,19 @@ export const ParseObjectLiteralServiceId = createId(
 )
 
 // Define classes in dependency order to avoid TDZ errors
-// 1. CreateSourceFileService - no dependencies
+// 1. CreateSourceFileService - depends on ITempDirService
 @injectable()
 export class CreateSourceFileService {
   constructor(
     @inject(FileSystemServiceId)
     private readonly fileSystemService: IFileSystemService,
+    @inject(ITempDirServiceId)
+    private readonly tempDirService: ITempDirService,
   ) {}
 
   async _createSourceFile(input: string, config: Config | null) {
     const dir = await this.fileSystemService.promisifyFs.mkdtemp(
-      path.join(tmpdir(), 'shadcn-'),
+      path.join(this.tempDirService.tmpdir(), 'shadcn-'),
     )
     const resolvedPath = config?.resolvedPaths?.tailwindConfig || 'tailwind.config.ts'
     const tempFile = path.join(dir, `shadcn-${path.basename(resolvedPath)}`)

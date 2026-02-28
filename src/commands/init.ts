@@ -16,6 +16,8 @@ import {
 } from '@/registry/api';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';
+import { IExitServiceId } from '@/services/env';
+import type { IExitService } from '@/services/env';
 import { AddComponentsServiceId } from '@/utils/add-components';
 import type { AddComponentsService } from '@/utils/add-components';
 import type { Config, RawConfig } from '@/utils/get-config';
@@ -110,7 +112,9 @@ export class InitCommandService {
     @inject(PromptForMinimalConfigServiceId)
     private readonly promptForMinimalConfigService: PromptForMinimalConfigService,
     @inject(UpdateTailwindContentServiceId)
-    private readonly updateTailwindContentService: UpdateTailwindContentService
+    private readonly updateTailwindContentService: UpdateTailwindContentService,
+    @inject(IExitServiceId)
+    private readonly exitService: IExitService
   ) {}
 
   async runInit(
@@ -124,7 +128,7 @@ export class InitCommandService {
     } else if (!options.skipPreflight) {
       const preflight = await this.preFlightInitService.preFlightInit(options);
       if (preflight.errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT]) {
-        process.exit(1);
+        this.exitService.exit(1);
       }
       projectInfo = preflight.projectInfo;
     } else {
@@ -159,7 +163,7 @@ export class InitCommandService {
       });
 
       if (!proceed) {
-        process.exit(0);
+        this.exitService.exit(0);
       }
     }
 

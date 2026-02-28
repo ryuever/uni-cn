@@ -6,6 +6,11 @@ import type {
 } from '@/registry/schema';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';
+import {
+  ICwdServiceId,
+  ITempDirServiceId,
+} from '@/services/env';
+import type { ICwdService, ITempDirService } from '@/services/env';
 import { type Config, getTSConfig } from '@/utils/get-config';
 import type {
   GetProjectInfoService,
@@ -22,8 +27,6 @@ import type { z } from 'zod';
 
 import path, { basename, dirname } from 'pathe';
 
-import { existsSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import prompts from 'prompts';
 import { transform as metaTransform } from 'vue-metamorph';
 
@@ -40,7 +43,11 @@ export class UpdateFilesService {
     @inject(ResolveImportsServiceId)
     private readonly resolveImportsService: ResolveImportsService,
     @inject(TransformersServiceId)
-    private readonly transformersService: TransformersService
+    private readonly transformersService: TransformersService,
+    @inject(ICwdServiceId)
+    private readonly cwdService: ICwdService,
+    @inject(ITempDirServiceId)
+    private readonly tempDirService: ITempDirService
   ) {}
 
   async updateFiles(
@@ -97,7 +104,7 @@ export class UpdateFilesService {
           continue;
         }
         const dirName = path.dirname(file.path);
-        tempRoot = path.join(tmpdir(), 'shadcn-vue');
+        tempRoot = path.join(this.tempDirService.tmpdir(), 'shadcn-vue');
 
         // Create the full temp directory path with original directory structure
         const tempDir = path.join(tempRoot, 'registry', config.style, dirName);
@@ -121,7 +128,7 @@ export class UpdateFilesService {
       }
 
       await this.fileSystemService.promisifyFs.cp(
-        path.join(process.cwd(), 'node_modules'),
+        path.join(this.cwdService.cwd(), 'node_modules'),
         tempRoot,
         {
           recursive: true,
@@ -168,7 +175,7 @@ export class UpdateFilesService {
         filePath = filePath.replace(/\.ts?$/, (match) => '.js');
       }
 
-      const existingFile = existsSync(filePath);
+      const existingFile = this.fileSystemService.fsExtra.existsSync(filePath);
 
       // Run our transformers.
       const content = await this.transformersService.transform({
@@ -200,7 +207,7 @@ export class UpdateFilesService {
       // Check for existing folder in UI component only
       if (file.type === 'registry:ui') {
         const folderName = basename(dirname(filePath));
-        const existingFolder = existsSync(dirname(filePath));
+        const existingFolder = this.fileSystemService.fsExtra.existsSync(dirname(filePath));
 
         if (!existingFolder) {
           folderSkipped.set(folderName, false);
@@ -254,7 +261,7 @@ export class UpdateFilesService {
       }
 
       // Create the target directory if it doesn't exist.
-      if (!existsSync(targetDir)) {
+      if (!this.fileSystemService.fsExtra.existsSync(targetDir)) {
         await this.fileSystemService.promisifyFs.mkdir(targetDir, {
           recursive: true,
         });
