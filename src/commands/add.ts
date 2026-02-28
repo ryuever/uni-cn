@@ -1,6 +1,6 @@
 import * as ERRORS from '@/utils/errors';
 import { addServiceModules } from '@/commands/addService';
-import { Container, createId, inject, injectable } from '@/di';
+import { Container, createId, inject, injectable } from '@x-oasis/di';
 import {
   getRegistryIndex,
   getRegistryItem,

@@ -1,5 +1,5 @@
 import type { createOptionsSchema } from '@/commands/create';
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import { getRegistryTemplates } from '@/registry/api';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';

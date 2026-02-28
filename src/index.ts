@@ -1,4 +1,4 @@
-import { Container } from '@/di';
+import { Container } from '@x-oasis/di';
 import { initServiceModules } from './commands/initService';
 import type { initOptionsSchema } from './commands/init';
 import { InitCommandServiceId } from './commands/init';

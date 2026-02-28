@@ -1,4 +1,4 @@
-import { injectable } from '@/di';
+import { injectable } from '@x-oasis/di';
 import type { IFileSystemService } from './types';
 import fsExtra from 'fs-extra';
 import { promises as fs } from 'node:fs';

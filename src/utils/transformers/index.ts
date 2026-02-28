@@ -1,4 +1,4 @@
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import { getRegistryIcons } from '@/registry/api';
 import type { registryBaseColorSchema } from '@/registry/schema';
 import type { Config } from '@/utils/get-config';
@@ -48,7 +48,7 @@ export class TransformersService {
 
 /** Standalone transform for testing - uses DI */
 export async function transform(opts: TransformOpts) {
-  const { Container } = await import('@/di');
+  const { Container } = await import('@x-oasis/di');
   const { initServiceModules } = await import('@/commands/initService');
   const container = new Container();
   container.load(initServiceModules);

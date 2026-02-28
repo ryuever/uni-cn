@@ -1,5 +1,5 @@
 import type { Config } from '../../src/utils/get-config';
-import { Container } from '../../src/di';
+import { Container } from '@x-oasis/di';
 import { addServiceModules } from '../../src/commands/addService';
 import { AddComponentsServiceId } from '../../src/utils/add-components';
 import type { AddComponentsService } from '../../src/utils/add-components';

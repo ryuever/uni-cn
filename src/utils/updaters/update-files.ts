@@ -1,4 +1,4 @@
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import { getRegistryBaseColor } from '@/registry/api';
 import type {
   RegistryItem,

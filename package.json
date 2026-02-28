@@ -45,6 +45,7 @@
     "init": "node ./dist/cli.mjs init"
   },
   "dependencies": {
+    "@x-oasis/di": "^0.2.4",
     "commander": "^14.0.2",
     "consola": "^3.4.2",
     "cosmiconfig": "^8.3.6",

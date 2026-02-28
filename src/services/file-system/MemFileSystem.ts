@@ -1,4 +1,4 @@
-import { injectable } from '@/di';
+import { injectable } from '@x-oasis/di';
 import type { IFileSystemService } from './types';
 import { Volume } from 'memfs';
 

@@ -4,7 +4,7 @@ import {
   createId,
   inject,
   injectable,
-} from '@/di';
+} from '@x-oasis/di';
 import type { PreFlightInitService } from '@/preflights/preflight-init';
 import { PreFlightInitServiceId } from '@/preflights/preflight-init';
 import {

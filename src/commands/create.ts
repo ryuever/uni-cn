@@ -1,4 +1,4 @@
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import { CreateTemplateFilesServiceId } from '@/utils/updaters/create-template-files';
 import type { CreateTemplateFilesService } from '@/utils/updaters/create-template-files';
 

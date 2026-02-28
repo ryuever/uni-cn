@@ -1,5 +1,5 @@
 /* eslint-disable prefer-const */
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import {
   iconsSchema,
   registryBaseColorSchema,

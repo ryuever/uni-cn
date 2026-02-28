@@ -1,6 +1,6 @@
 import * as ERRORS from '@/utils/errors';
 import type { initOptionsSchema } from '@/commands/init';
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';
 import type { GetProjectInfoService } from '@/utils/get-project-info';

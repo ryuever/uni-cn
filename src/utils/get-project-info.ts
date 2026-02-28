@@ -1,4 +1,4 @@
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';
 import type { Framework } from '@/utils/frameworks';
@@ -409,7 +409,7 @@ export async function getProjectInfo(cwd: string): Promise<{
   tailwindVersion: TailwindVersion;
   aliasPrefix: string | null;
 } | null> {
-  const { Container } = await import('@/di');
+  const { Container } = await import('@x-oasis/di');
   const { initServiceModules } = await import('@/commands/initService');
   const container = new Container();
   container.load(initServiceModules);
@@ -434,7 +434,7 @@ export async function getProjectInfo(cwd: string): Promise<{
 
 /** Standalone getTailwindCssFile for testing */
 export async function getTailwindCssFile(cwd: string): Promise<string | null> {
-  const { Container } = await import('@/di');
+  const { Container } = await import('@x-oasis/di');
   const { initServiceModules } = await import('@/commands/initService');
   const container = new Container();
   container.load(initServiceModules);

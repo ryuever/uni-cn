@@ -2,7 +2,7 @@ import {
   CreateCommandService,
   CreateCommandServiceId,
 } from '@/commands/create';
-import { Registry } from '@/di';
+import { Registry } from '@x-oasis/di';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import { NodeFileSystem } from '@/services/file-system/NodeFileSystem';
 import {

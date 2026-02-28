@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@x-oasis/di':
+        specifier: ^0.2.4
+        version: 0.2.4
       commander:
         specifier: ^14.0.2
         version: 14.0.3
@@ -1044,6 +1047,9 @@ packages:
 
   '@vuedx/template-ast-types@0.7.1':
     resolution: {integrity: sha512-Mqugk/F0lFN2u9bhimH6G1kSu2hhLi2WoqgCVxrMvgxm2kDc30DtdvVGRq+UgEmKVP61OudcMtZqkUoGQeFBUQ==}
+
+  '@x-oasis/di@0.2.4':
+    resolution: {integrity: sha512-0SKlHBFdWzosoD5yLq91B29Z4+obfXJL4IA/5hAVR6jo5DJHlHY2UPJnqShR7z/Fp2B/kKlak/WOrfl6JRuJQg==}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -3301,6 +3307,8 @@ snapshots:
   '@vuedx/template-ast-types@0.7.1':
     dependencies:
       '@vue/compiler-core': 3.5.29
+
+  '@x-oasis/di@0.2.4': {}
 
   acorn-jsx@5.3.2(acorn@8.16.0):
     dependencies:

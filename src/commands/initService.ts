@@ -4,7 +4,7 @@ import {
   PromptForMinimalConfigService,
   PromptForMinimalConfigServiceId,
 } from '@/commands/init';
-import { Container, Registry } from '@/di';
+import { Container, Registry } from '@x-oasis/di';
 import {
   PreFlightInitService,
   PreFlightInitServiceId,

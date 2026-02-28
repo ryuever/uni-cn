@@ -1,6 +1,6 @@
 import path from 'pathe';
 import type { Config, RawConfig } from '../../src/utils/get-config';
-import { Container } from '../../src/di';
+import { Container } from '@x-oasis/di';
 import { initServiceModules } from '../../src/commands/initService';
 import {
   InitCommandService,

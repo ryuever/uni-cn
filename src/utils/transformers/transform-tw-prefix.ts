@@ -1,4 +1,4 @@
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 
 import type { CodemodPlugin } from 'vue-metamorph';
 
