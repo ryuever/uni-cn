@@ -89,6 +89,8 @@ export const initOptionsSchema = z.object({
   skipDependenciesInstall: z.boolean().optional(),
   /** When true, skip addComponents entirely. Use when getTSConfig/updateFiles cannot run (e.g. memfs without Node fs for tsconfig). */
   skipAddComponents: z.boolean().optional(),
+  /** When provided, pass to addComponents to skip getProjectInfo (which uses Node fs glob). For memfs. */
+  tailwindVersion: z.enum(['v3', 'v4']).optional(),
 });
 
 export const PromptForMinimalConfigServiceId = createId(
@@ -167,14 +169,15 @@ export class InitCommandService {
       }
     }
 
-    // Write components.json.
+    // Write components.json (strip resolvedPaths which are runtime-only).
     const componentSpinner = spinner(`Writing components.json.`, {
       silent: options.silent,
     }).start();
     const targetPath = path.resolve(options.cwd, 'components.json');
+    const { resolvedPaths: _rp, ...configForDisk } = config as Config & { resolvedPaths?: unknown };
     await this.fileSystemService.promisifyFs.writeFile(
       targetPath,
-      JSON.stringify(config, null, 2),
+      JSON.stringify(configForDisk, null, 2),
       'utf8'
     );
     componentSpinner?.succeed();
@@ -185,7 +188,7 @@ export class InitCommandService {
 
     // Add components.
     const fullConfig =
-      config && 'resolvedPaths' in config && config.resolvedPaths?.cwd
+      config && 'resolvedPaths' in config && (config as Config).resolvedPaths?.cwd
         ? (config as Config)
         : await resolveConfigPaths(options.cwd, config as RawConfig);
     const components = [
@@ -193,13 +196,13 @@ export class InitCommandService {
       ...(options.components ?? []),
     ];
     await this.addComponentsService.addComponents(components, fullConfig, {
-      // Init will always overwrite files.
       overwrite: true,
       silent: options.silent,
       style: options.style,
       isNewProject:
         options.isNewProject || projectInfo?.framework.name === 'nuxt',
       skipDependenciesInstall: options.skipDependenciesInstall,
+      tailwindVersion: options.tailwindVersion,
     });
 
     // If a new project is using src dir, let's update the tailwind content config.

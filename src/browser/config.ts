@@ -3,7 +3,7 @@ import type { Config, RawConfig } from '@/utils/get-config';
 
 /** Default RawConfig for browser/memfs (Vite + Vue + Tailwind v4) */
 export const defaultMemfsRawConfig: RawConfig = {
-  $schema: 'https://ui.shadcn.com/schema.json',
+  $schema: 'https://shadcn-vue.com/schema.json',
   style: 'new-york',
   typescript: true,
   tailwind: {

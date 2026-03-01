@@ -8,7 +8,8 @@ import {
   defaultMemfsRawConfig,
 } from 'uni-cn/browser';
 import type { RawConfig } from 'uni-cn/browser';
-import { INITIAL_PROJECT_FILES } from '../data/initialProject';
+import { INITIAL_PROJECT_FILES } from '../data/initialViteVueProject';
+import { PREPARE_VUE_PROJECT_FILES } from '../data/prepareViteVueProject';
 
 const ROOT = '/project';
 
@@ -44,7 +45,22 @@ export function useMemfs() {
     logLines.value = [];
   }
 
-  async function runInit(options: { style?: string; baseColor?: string } = {}) {
+  /**
+   * Overwrite project files with the "prepare" state (Tailwind v4 + @ alias configured).
+   * Call this before runInit to ensure the init flow produces the expected output.
+   */
+  function prepareForInit() {
+    const v = vol.value;
+    for (const [relativePath, content] of Object.entries(PREPARE_VUE_PROJECT_FILES)) {
+      const fullPath = `${root.value}/${relativePath}`.replace(/\/+/g, '/');
+      const parentDir = fullPath.replace(/\/[^/]+$/, '');
+      v.mkdirSync(parentDir, { recursive: true });
+      v.writeFileSync(fullPath, content, { encoding: 'utf-8' });
+    }
+    refreshKey.value++;
+  }
+
+  async function runInit(options: { style?: string; baseColor?: string; skipAddComponents?: boolean } = {}) {
     ensureProject();
     clearLogs();
     writeLog(`$ npx uni-cn init`);
@@ -59,7 +75,9 @@ export function useMemfs() {
         },
       };
       const config = buildMemfsConfig(root.value, rawConfig);
-      await runInitWithVolume(vol.value, root.value, config);
+      await runInitWithVolume(vol.value, root.value, config, {
+        skipAddComponents: options.skipAddComponents ?? true,
+      });
       refreshKey.value++;
       writeLog('Init complete.');
       return true;
@@ -166,6 +184,7 @@ export function useMemfs() {
     logLines,
     refreshKey,
     ensureProject,
+    prepareForInit,
     writeLog,
     clearLogs,
     runInit,

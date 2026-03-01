@@ -15,6 +15,7 @@ const {
   logLines,
   refreshKey,
   ensureProject,
+  prepareForInit,
   getFileContent,
   setFileContent,
   buildFileTree,
@@ -127,6 +128,7 @@ const AddExample = defineAsyncComponent({
               <InitExample
                 v-if="tab === 'init'"
                 :run-init="runInit"
+                :prepare-for-init="prepareForInit"
               />
               <CreateExample
                 v-else-if="tab === 'create'"

@@ -9,6 +9,8 @@ import {
 } from '@/registry/api';
 import type { RegistryResolveItemsTreeService } from '@/registry/api';
 import { registryItemSchema } from '@/registry/schema';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
 import type {
   Config,
   configSchema,
@@ -119,8 +121,58 @@ export class AddProjectComponentsService {
     @inject(RegistryResolveItemsTreeServiceId)
     private readonly registryResolveItemsTreeService: RegistryResolveItemsTreeService,
     @inject(UpdateFilesServiceId)
-    private readonly updateFilesService: UpdateFilesService
+    private readonly updateFilesService: UpdateFilesService,
+    @inject(FileSystemServiceId)
+    private readonly fileSystemService: IFileSystemService
   ) {}
+
+  /**
+   * Update package.json dependencies/devDependencies in-place (without npm install).
+   * Used in memfs/browser mode where execa cannot run package managers.
+   */
+  private async updatePackageJsonDeps(
+    config: z.infer<typeof configSchema>,
+    dependencies: string[],
+    devDependencies: string[],
+    options: { silent?: boolean } = {}
+  ) {
+    const pkgPath = path.resolve(config.resolvedPaths.cwd, 'package.json');
+    if (!this.fileSystemService.fsExtra.existsSync(pkgPath)) return;
+
+    const dependenciesSpinner = spinner(`Installing dependencies.`, {
+      silent: options.silent,
+    })?.start();
+
+    const raw = await this.fileSystemService.promisifyFs.readFile(pkgPath, 'utf-8');
+    const pkg = JSON.parse(raw as string);
+
+    if (!pkg.dependencies) pkg.dependencies = {};
+    if (!pkg.devDependencies) pkg.devDependencies = {};
+
+    for (const dep of dependencies) {
+      const [name, version] = parseDep(dep);
+      if (!pkg.dependencies[name]) {
+        pkg.dependencies[name] = version;
+      }
+    }
+    for (const dep of devDependencies) {
+      const [name, version] = parseDep(dep);
+      if (!pkg.devDependencies[name]) {
+        pkg.devDependencies[name] = version;
+      }
+    }
+
+    pkg.dependencies = sortObject(pkg.dependencies);
+    pkg.devDependencies = sortObject(pkg.devDependencies);
+
+    await this.fileSystemService.promisifyFs.writeFile(
+      pkgPath,
+      JSON.stringify(pkg, null, 2),
+      'utf-8'
+    );
+
+    dependenciesSpinner?.succeed();
+  }
 
   async addProjectComponents(
     components: string[],
@@ -181,13 +233,17 @@ export class AddProjectComponentsService {
       silent: options.silent,
     });
 
-    // TODO: skipDependenciesInstall 参数在 init 中没有用到，这里需要处理一下；
-    // 如果是memfs的话，不执行 install 操作，但是需要更新 package.json 中的 dependencies
-    // 和 devDependencies。因为这些东西可以通过esm的方式来安装
     if (!options.skipDependenciesInstall) {
       await updateDependencies(tree.dependencies, tree.devDependencies, config, {
         silent: options.silent,
       });
+    } else if (tree.dependencies?.length || tree.devDependencies?.length) {
+      await this.updatePackageJsonDeps(
+        config,
+        tree.dependencies ?? [],
+        tree.devDependencies ?? [],
+        { silent: options.silent }
+      );
     }
     const memfsMode = options.tailwindVersion !== undefined;
     await this.updateFilesService.updateFiles(tree.files, config, {
@@ -459,5 +515,19 @@ async function shouldOverwriteCssVars(
   return payload.some(
     (component) =>
       component.type === 'registry:theme' || component.type === 'registry:style'
+  );
+}
+
+function parseDep(dep: string): [name: string, version: string] {
+  const atIdx = dep.lastIndexOf('@');
+  if (atIdx > 0) {
+    return [dep.slice(0, atIdx), dep.slice(atIdx + 1)];
+  }
+  return [dep, 'latest'];
+}
+
+function sortObject(obj: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(obj).sort(([a], [b]) => a.localeCompare(b))
   );
 }

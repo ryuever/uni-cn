@@ -34,7 +34,7 @@ export const ADD_BUTTON_VUE_PROJECT_FILES: Record<string, string> = {
         'class-variance-authority': '^0.7.1',
         clsx: '^2.1.1',
         'lucide-vue-next': '^0.575.0',
-        reka-ui: '^2.8.2',
+        'reka-ui': '^2.8.2',
         'tailwind-merge': '^3.5.0',
         tailwindcss: '^4.2.1',
         vue: '^3.5.25',

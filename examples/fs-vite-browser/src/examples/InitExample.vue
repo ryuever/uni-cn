@@ -2,7 +2,8 @@
 import { ref } from 'vue';
 
 const props = defineProps<{
-  runInit: (options?: { style?: string; baseColor?: string }) => Promise<boolean>;
+  runInit: (options?: { style?: string; baseColor?: string; skipAddComponents?: boolean }) => Promise<boolean>;
+  prepareForInit?: () => void;
 }>();
 
 const style = ref('new-york');
@@ -54,9 +55,14 @@ async function doInit() {
           </select>
         </label>
       </div>
-      <button :disabled="loading" @click="doInit">
-        {{ loading ? 'Running...' : 'Run Init' }}
-      </button>
+      <div class="button-group">
+        <button v-if="prepareForInit" :disabled="loading" @click="prepareForInit">
+          Prepare for Init
+        </button>
+        <button :disabled="loading" @click="doInit">
+          {{ loading ? 'Running...' : 'Run Init' }}
+        </button>
+      </div>
     </section>
 
     <section v-if="error" class="error">{{ error }}</section>
@@ -110,6 +116,11 @@ async function doInit() {
   background: #0f172a;
   color: #e2e8f0;
   border-radius: 4px;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .form button {

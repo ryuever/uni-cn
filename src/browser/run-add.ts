@@ -10,6 +10,7 @@ import {
   IExitServiceId,
   ITempDirServiceId,
 } from '@/services/env';
+import { GetProjectTailwindVersionFromConfigServiceId } from '@/utils/get-project-info';
 import { AddComponentsServiceId } from '@/utils/add-components';
 import type { AddComponentsService } from '@/utils/add-components';
 import type { Config } from '@/utils/get-config';
@@ -42,6 +43,11 @@ export async function runAddWithVolume(
   container
     .bind(IExitServiceId)
     .toConstantValue(new BrowserExitService());
+  container
+    .bind(GetProjectTailwindVersionFromConfigServiceId)
+    .toConstantValue({
+      getProjectTailwindVersionFromConfig: async () => 'v4' as const,
+    });
 
   const addComponentsService: AddComponentsService =
     container.get(AddComponentsServiceId);
