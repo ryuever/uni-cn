@@ -126,54 +126,6 @@ export class AddProjectComponentsService {
     private readonly fileSystemService: IFileSystemService
   ) {}
 
-  /**
-   * Update package.json dependencies/devDependencies in-place (without npm install).
-   * Used in memfs/browser mode where execa cannot run package managers.
-   */
-  private async updatePackageJsonDeps(
-    config: z.infer<typeof configSchema>,
-    dependencies: string[],
-    devDependencies: string[],
-    options: { silent?: boolean } = {}
-  ) {
-    const pkgPath = path.resolve(config.resolvedPaths.cwd, 'package.json');
-    if (!this.fileSystemService.fsExtra.existsSync(pkgPath)) return;
-
-    const dependenciesSpinner = spinner(`Installing dependencies.`, {
-      silent: options.silent,
-    })?.start();
-
-    const raw = await this.fileSystemService.promisifyFs.readFile(pkgPath, 'utf-8');
-    const pkg = JSON.parse(raw as string);
-
-    if (!pkg.dependencies) pkg.dependencies = {};
-    if (!pkg.devDependencies) pkg.devDependencies = {};
-
-    for (const dep of dependencies) {
-      const [name, version] = parseDep(dep);
-      if (!pkg.dependencies[name]) {
-        pkg.dependencies[name] = version;
-      }
-    }
-    for (const dep of devDependencies) {
-      const [name, version] = parseDep(dep);
-      if (!pkg.devDependencies[name]) {
-        pkg.devDependencies[name] = version;
-      }
-    }
-
-    pkg.dependencies = sortObject(pkg.dependencies);
-    pkg.devDependencies = sortObject(pkg.devDependencies);
-
-    await this.fileSystemService.promisifyFs.writeFile(
-      pkgPath,
-      JSON.stringify(pkg, null, 2),
-      'utf-8'
-    );
-
-    dependenciesSpinner?.succeed();
-  }
-
   async addProjectComponents(
     components: string[],
     config: z.infer<typeof configSchema>,
@@ -233,18 +185,12 @@ export class AddProjectComponentsService {
       silent: options.silent,
     });
 
-    if (!options.skipDependenciesInstall) {
-      await updateDependencies(tree.dependencies, tree.devDependencies, config, {
-        silent: options.silent,
-      });
-    } else if (tree.dependencies?.length || tree.devDependencies?.length) {
-      await this.updatePackageJsonDeps(
-        config,
-        tree.dependencies ?? [],
-        tree.devDependencies ?? [],
-        { silent: options.silent }
-      );
-    }
+    await updateDependencies(tree.dependencies, tree.devDependencies, config, {
+      silent: options.silent,
+      ...(options.skipDependenciesInstall && {
+        fileSystemService: this.fileSystemService,
+      }),
+    });
     const memfsMode = options.tailwindVersion !== undefined;
     await this.updateFilesService.updateFiles(tree.files, config, {
       overwrite: options.overwrite,
@@ -401,21 +347,12 @@ export class AddWorkspaceComponentsService {
       }
 
       // 4. Update dependencies.
-      if (!options.skipDependenciesInstall) {
-        await Promise.allSettled([
-          component.dependencies && component.dependencies.length
-            ? updateDependencies(component.dependencies, targetConfig, {
-                silent: true,
-              })
-            : Promise.resolve(),
-          component.devDependencies && component.devDependencies.length
-            ? updateDependencies(component.devDependencies, targetConfig, {
-                silent: true,
-                dev: true,
-              })
-            : Promise.resolve(),
-        ]);
-      }
+      await updateDependencies(
+        component.dependencies,
+        component.devDependencies,
+        targetConfig,
+        { silent: true }
+      );
 
       // 5. Update files.
       const files = await this.updateFilesService.updateFiles(
@@ -518,16 +455,3 @@ async function shouldOverwriteCssVars(
   );
 }
 
-function parseDep(dep: string): [name: string, version: string] {
-  const atIdx = dep.lastIndexOf('@');
-  if (atIdx > 0) {
-    return [dep.slice(0, atIdx), dep.slice(atIdx + 1)];
-  }
-  return [dep, 'latest'];
-}
-
-function sortObject(obj: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(obj).sort(([a], [b]) => a.localeCompare(b))
-  );
-}
