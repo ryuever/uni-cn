@@ -1,6 +1,6 @@
 # uni-cn
 
-Headless CLI for adding Vue/UI components. Based on [shadcn-vue](https://github.com/unovue/shadcn-vue), refactored with **Dependency Injection (DI)** to support swappable filesystem backends and run in both **Node.js** and **Browser** environments.
+A headless, environment-agnostic reimplementation of the shadcn-vue CLI. Powered by Dependency Injection, it runs the same init / add commands on real disk (Node.js) or entirely in-memory (browser with memfs) — no server required.
 
 ## Features
 
