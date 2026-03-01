@@ -9,14 +9,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "buffer": "^6.0.3",
+    "events": "^3.3.0",
     "memfs": "^4.14.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "readable-stream": "^4.7.0",
+    "stream-browserify": "^3.0.0",
     "uni-cn": "file:../..",
+    "util": "^0.12.5",
     "vue": "^3.5.25"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.2",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
+    "vite-plugin-node-polyfills": "^0.25.0",
     "vue-tsc": "^3.1.5"
   }
 }

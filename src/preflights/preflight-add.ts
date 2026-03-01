@@ -73,7 +73,7 @@ export class PreFlightAddService {
       );
       logger.error(
         `Learn more at ${highlighter.info(
-          'https://shadcn-vue.com/docs/components-json'
+          'https://ui.shadcn.com/docs/components-json'
         )}.`
       );
       logger.break();

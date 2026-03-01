@@ -74,7 +74,7 @@ pnpm test
 ## Examples 
 
 ### Node
-REGISTRY_URL=https://shadcn-vue.com/r npm run init -- --cwd /tmp/my-vue-app -y -d
+REGISTRY_URL=https://ui.shadcn.com/r npm run init -- --cwd /tmp/my-vue-app -y -d
 
 ### Memfs
 

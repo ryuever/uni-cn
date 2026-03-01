@@ -1,9 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import InitExample from './examples/InitExample.vue';
-import CreateExample from './examples/CreateExample.vue';
+import { ref, defineAsyncComponent, h } from 'vue';
 
 const tab = ref<'init' | 'create'>('init');
+
+const ErrorFallback = {
+  props: ['error'],
+  setup(props: { error?: Error }) {
+    return () =>
+      h('div', { class: 'error-box' }, [
+        h('h3', 'Failed to load'),
+        h('pre', props.error?.stack || props.error?.message || String(props.error)),
+      ]);
+  },
+};
+
+const InitExample = defineAsyncComponent({
+  loader: () => import('./examples/InitExample.vue'),
+  errorComponent: ErrorFallback,
+});
+const CreateExample = defineAsyncComponent({
+  loader: () => import('./examples/CreateExample.vue'),
+  errorComponent: ErrorFallback,
+});
 </script>
 
 <template>
@@ -32,8 +50,13 @@ const tab = ref<'init' | 'create'>('init');
     </nav>
 
     <main>
-      <InitExample v-show="tab === 'init'" />
-      <CreateExample v-show="tab === 'create'" />
+      <Suspense>
+        <InitExample v-if="tab === 'init'" />
+        <CreateExample v-else />
+        <template #fallback>
+          <p class="loading">Loading...</p>
+        </template>
+      </Suspense>
     </main>
   </div>
 </template>
@@ -88,5 +111,23 @@ h1 {
 
 main {
   flex: 1;
+}
+
+.loading {
+  color: #94a3b8;
+  padding: 1rem;
+}
+
+.error-box {
+  padding: 1rem;
+  background: #7f1d1d;
+  border: 1px solid #991b1b;
+  border-radius: 8px;
+  color: #fecaca;
+}
+
+.error-box pre {
+  overflow: auto;
+  white-space: pre-wrap;
 }
 </style>

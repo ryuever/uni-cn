@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { transformTailwindContent } from '@/utils/updaters/update-tailwind-content'
 
 const SHARED_CONFIG = {
-  $schema: 'https://shadcn-vue.com/schema.json',
+  $schema: 'https://ui.shadcn.com/schema.json',
   style: 'new-york',
   rsc: true,
   tsx: true,

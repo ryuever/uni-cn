@@ -344,7 +344,7 @@ export class GetProjectConfigService {
     }
 
     const config: RawConfig = {
-      $schema: 'https://shadcn-vue.com/schema.json',
+      $schema: 'https://ui.shadcn.com/schema.json',
       typescript: projectInfo.typescript,
       style: 'new-york',
       tailwind: {
