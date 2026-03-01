@@ -77,7 +77,8 @@ function resolveStubsPlugin() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/uni-cn/' : '/',
   plugins: [vue(), resolveStubsPlugin()],
   server: {
     proxy: {
@@ -152,4 +153,4 @@ export default defineConfig({
   ssr: {
     noExternal: ['uni-cn'],
   },
-});
+}));

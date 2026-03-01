@@ -37,19 +37,19 @@ const REGISTRY_BASE =
     : 'https://ui.shadcn.com/r';
 
 /**
- * In browser, use same-origin proxy to avoid CORS. The Vite dev server proxies
- * /api/registry to https://ui.shadcn.com.
+ * In browser on localhost, use same-origin proxy to avoid CORS. The Vite dev
+ * server proxies /api/registry to https://ui.shadcn.com.
+ * On non-localhost origins (e.g. GitHub Pages) call the registry directly.
  */
 function getRegistryBaseUrl(): string {
   const g = typeof globalThis !== 'undefined' ? globalThis : null;
-  const hasDocument = g && 'document' in g;
   const hasLocation = g && 'location' in g;
   const hostname =
     hasLocation && typeof (g as { location?: { hostname?: string } }).location?.hostname === 'string'
       ? (g as { location: { hostname: string } }).location.hostname
       : '';
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-  if (hasDocument || isLocalhost) {
+  if (isLocalhost) {
     return '/api/registry/r';
   }
   return REGISTRY_BASE;
