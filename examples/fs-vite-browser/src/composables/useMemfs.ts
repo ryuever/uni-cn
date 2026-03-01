@@ -6,8 +6,9 @@ import {
   runCreateWithVolume,
   buildMemfsConfig,
   defaultMemfsRawConfig,
+  setLogListener,
 } from 'uni-cn/browser';
-import type { RawConfig } from 'uni-cn/browser';
+import type { RawConfig, LogEntry } from 'uni-cn/browser';
 import { INITIAL_PROJECT_FILES } from '../data/initialViteVueProject';
 import { PREPARE_VUE_PROJECT_FILES } from '../data/prepareViteVueProject';
 
@@ -45,6 +46,20 @@ export function useMemfs() {
     logLines.value = [];
   }
 
+  function formatLogEntry(entry: LogEntry): string {
+    if (entry.status === 'break') return '';
+    const prefix =
+      entry.type === 'spinner'
+        ? entry.status === 'succeed' ? '✔' : entry.status === 'fail' ? '✖' : 'ℹ'
+        : '';
+    return prefix ? `${prefix} ${entry.text}` : entry.text;
+  }
+
+  function withLogListener<T>(fn: () => Promise<T>): Promise<T> {
+    setLogListener((entry) => writeLog(formatLogEntry(entry)));
+    return fn().finally(() => setLogListener(null));
+  }
+
   /**
    * Overwrite project files with the "prepare" state (Tailwind v4 + @ alias configured).
    * Call this before runInit to ensure the init flow produces the expected output.
@@ -75,9 +90,12 @@ export function useMemfs() {
         },
       };
       const config = buildMemfsConfig(root.value, rawConfig);
-      await runInitWithVolume(vol.value, root.value, config, {
-        skipAddComponents: options.skipAddComponents ?? true,
-      });
+      await withLogListener(() =>
+        runInitWithVolume(vol.value, root.value, config, {
+          skipAddComponents: options.skipAddComponents ?? false,
+          silent: false,
+        })
+      );
       refreshKey.value++;
       writeLog('Init complete.');
       return true;
@@ -98,11 +116,13 @@ export function useMemfs() {
     writeLog(`$ npx uni-cn create ${options.name ?? 'my-project'}`);
     writeLog('Running create...');
     try {
-      await runCreateWithVolume(vol.value, root.value, {
-        template: options.template ?? 'default',
-        style: options.style ?? 'default',
-        name: options.name ?? 'my-project',
-      });
+      await withLogListener(() =>
+        runCreateWithVolume(vol.value, root.value, {
+          template: options.template ?? 'default',
+          style: options.style ?? 'default',
+          name: options.name ?? 'my-project',
+        })
+      );
       refreshKey.value++;
       writeLog('Create complete.');
       return true;
@@ -124,7 +144,11 @@ export function useMemfs() {
         style: options?.style ?? 'new-york',
       };
       const config = buildMemfsConfig(root.value, rawConfig);
-      await runAddWithVolume(vol.value, root.value, components, config);
+      await withLogListener(() =>
+        runAddWithVolume(vol.value, root.value, components, config, {
+          silent: false,
+        })
+      );
       refreshKey.value++;
       writeLog('Add complete.');
       return true;

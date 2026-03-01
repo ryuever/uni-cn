@@ -650,7 +650,16 @@ function getRegistryUrl(path: string) {
     return url.toString();
   }
 
-  return `${getRegistryBaseUrl()}/${path}`;
+  const base = getRegistryBaseUrl();
+
+  // In browser mode the base is a relative path (e.g. "/api/registry/r").
+  // resolveRegistryDependencies pushes already-resolved URLs back into the
+  // pipeline, so avoid double-prefixing when the path already starts with base.
+  if (path.startsWith('/') && path.startsWith(base)) {
+    return path;
+  }
+
+  return `${base}/${path}`;
 }
 
 export function isUrl(path: string) {
