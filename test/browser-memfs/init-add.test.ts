@@ -1,7 +1,7 @@
 import { Volume } from 'memfs';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runInitWithVolume } from '@/browser/run-init';
 import { runAddWithVolume } from '@/browser/run-add';
@@ -28,6 +28,51 @@ import {
   COLORS_NEUTRAL,
   ICONS_INDEX,
 } from './registry-fixtures';
+
+// ── Log capture infrastructure ──────────────────────────────────────────────
+const logMessages: string[] = [];
+
+vi.mock('@/utils/highlighter', () => ({
+  highlighter: {
+    error: (s: string) => s,
+    warn: (s: string) => s,
+    info: (s: string) => s,
+    success: (s: string) => s,
+  },
+}));
+
+vi.mock('@/utils/spinner', () => ({
+  spinner: (text: string, _options?: { silent?: boolean }) => {
+    const instance = {
+      start: () => instance,
+      succeed: (newText?: string) => {
+        logMessages.push(`✔ ${newText ?? text}`);
+        return instance;
+      },
+      fail: (newText?: string) => {
+        logMessages.push(`✖ ${newText ?? text}`);
+        return instance;
+      },
+      info: (newText?: string) => {
+        logMessages.push(`ℹ ${newText ?? text}`);
+        return instance;
+      },
+      stop: () => instance,
+    };
+    return instance;
+  },
+}));
+
+vi.mock('@/utils/logger', () => ({
+  logger: {
+    log: (...args: unknown[]) => { logMessages.push(args.join(' ')); },
+    info: (...args: unknown[]) => { logMessages.push(args.join(' ')); },
+    success: (...args: unknown[]) => { logMessages.push(args.join(' ')); },
+    warn: (...args: unknown[]) => { logMessages.push(args.join(' ')); },
+    error: (...args: unknown[]) => { logMessages.push(args.join(' ')); },
+    break: () => { logMessages.push(''); },
+  },
+}));
 
 const ROOT = '/project';
 
@@ -56,6 +101,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
 afterAll(() => server.close());
 
 beforeEach(() => {
+  logMessages.length = 0;
   clearRegistryCache();
 });
 
@@ -80,7 +126,7 @@ describe('browser-memfs: init command', () => {
     populateVolume(vol, ROOT, PREPARE_VUE_PROJECT_FILES);
 
     const config = buildNeutralConfig(ROOT);
-    await runInitWithVolume(vol, ROOT, config, { skipAddComponents: true });
+    await runInitWithVolume(vol, ROOT, config, { skipAddComponents: true, silent: false });
 
     assertFileExists(vol, ROOT, 'components.json');
 
@@ -94,6 +140,8 @@ describe('browser-memfs: init command', () => {
     expect(componentsJson.aliases).toEqual(expectedComponentsJson.aliases);
     expect(componentsJson.iconLibrary).toBe(expectedComponentsJson.iconLibrary);
     expect(componentsJson.resolvedPaths).toBeUndefined();
+
+    expect(logMessages).toContainEqual('✔ Writing components.json.');
   });
 
   it('should run full init flow: components.json + CSS vars + utils.ts + package.json', async () => {
@@ -101,7 +149,7 @@ describe('browser-memfs: init command', () => {
     populateVolume(vol, ROOT, PREPARE_VUE_PROJECT_FILES);
 
     const config = buildNeutralConfig(ROOT);
-    await runInitWithVolume(vol, ROOT, config, { skipAddComponents: false });
+    await runInitWithVolume(vol, ROOT, config, { skipAddComponents: false, silent: false });
 
     assertFileExists(vol, ROOT, 'components.json');
     assertFileExists(vol, ROOT, 'src/lib/utils.ts');
@@ -143,6 +191,36 @@ describe('browser-memfs: init command', () => {
     expect(css).toContain('@apply bg-background text-foreground');
     expect(css).not.toContain('@plugin');
   });
+
+  it('should produce correct log sequence during full init', async () => {
+    const vol = new Volume();
+    populateVolume(vol, ROOT, PREPARE_VUE_PROJECT_FILES);
+
+    const config = buildNeutralConfig(ROOT);
+    await runInitWithVolume(vol, ROOT, config, { skipAddComponents: false, silent: false });
+
+    expect(logMessages).toContainEqual('✔ Writing components.json.');
+    expect(logMessages).toContainEqual('✔ Checking registry.');
+    expect(logMessages).toContainEqual(
+      expect.stringContaining('✔ Updating CSS variables in')
+    );
+    expect(logMessages).toContainEqual('✔ Installing dependencies.');
+    expect(logMessages).toContainEqual('✔ Created 1 file:');
+    expect(logMessages).toContainEqual('  - src/lib/utils.ts');
+
+    const idxWrite = logMessages.findIndex(m => m.includes('Writing components.json'));
+    const idxRegistry = logMessages.findIndex(m => m.includes('Checking registry'));
+    const idxCssVars = logMessages.findIndex(m => m.includes('Updating CSS variables'));
+    const idxDeps = logMessages.findIndex(m => m.includes('Installing dependencies'));
+    const idxCreated = logMessages.findIndex(m => m.includes('Created 1 file'));
+    const idxFile = logMessages.findIndex(m => m.includes('src/lib/utils.ts'));
+
+    expect(idxWrite).toBeLessThan(idxRegistry);
+    expect(idxRegistry).toBeLessThan(idxCssVars);
+    expect(idxCssVars).toBeLessThan(idxDeps);
+    expect(idxDeps).toBeLessThan(idxCreated);
+    expect(idxCreated).toBeLessThan(idxFile);
+  });
 });
 
 describe('browser-memfs: add button command', () => {
@@ -151,7 +229,7 @@ describe('browser-memfs: add button command', () => {
     populateVolume(vol, ROOT, INIT_VUE_PROJECT_FILES);
 
     const config = buildNeutralConfig(ROOT);
-    await runAddWithVolume(vol, ROOT, ['button'], config);
+    await runAddWithVolume(vol, ROOT, ['button'], config, { silent: false });
 
     assertFileExists(vol, ROOT, 'src/components/ui/button/Button.vue');
     assertFileExists(vol, ROOT, 'src/components/ui/button/index.ts');
@@ -178,7 +256,7 @@ describe('browser-memfs: add button command', () => {
     populateVolume(vol, ROOT, INIT_VUE_PROJECT_FILES);
 
     const config = buildNeutralConfig(ROOT);
-    await runAddWithVolume(vol, ROOT, ['button'], config);
+    await runAddWithVolume(vol, ROOT, ['button'], config, { silent: false });
 
     const pkg = readJsonFromVolume<Record<string, any>>(vol, ROOT, 'package.json');
     const expectedPkg = JSON.parse(ADD_BUTTON_VUE_PROJECT_FILES['package.json']);
@@ -186,16 +264,41 @@ describe('browser-memfs: add button command', () => {
       expect(pkg.dependencies, `Missing dependency: ${dep}`).toHaveProperty(dep);
     }
   });
+
+  it('should produce correct log sequence during add button', async () => {
+    const vol = new Volume();
+    populateVolume(vol, ROOT, INIT_VUE_PROJECT_FILES);
+
+    const config = buildNeutralConfig(ROOT);
+    await runAddWithVolume(vol, ROOT, ['button'], config, { silent: false });
+
+    expect(logMessages).toContainEqual('✔ Checking registry.');
+    expect(logMessages).toContainEqual('✔ Installing dependencies.');
+    expect(logMessages).toContainEqual('✔ Created 2 files:');
+    expect(logMessages).toContainEqual('  - src/components/ui/button/Button.vue');
+    expect(logMessages).toContainEqual('  - src/components/ui/button/index.ts');
+
+    const idxRegistry = logMessages.findIndex(m => m.includes('Checking registry'));
+    const idxDeps = logMessages.findIndex(m => m.includes('Installing dependencies'));
+    const idxCreated = logMessages.findIndex(m => m.includes('Created 2 files'));
+    const idxButtonVue = logMessages.findIndex(m => m.includes('Button.vue'));
+    const idxButtonIndex = logMessages.findIndex(m => m.includes('button/index.ts'));
+
+    expect(idxRegistry).toBeLessThan(idxDeps);
+    expect(idxDeps).toBeLessThan(idxCreated);
+    expect(idxCreated).toBeLessThan(idxButtonVue);
+    expect(idxCreated).toBeLessThan(idxButtonIndex);
+  });
 });
 
 describe('browser-memfs: full flow (prepare -> init -> add button)', () => {
-  it('should produce correct file state through the complete flow', async () => {
+  it('should produce correct file state and log sequence through the complete flow', async () => {
     const vol = new Volume();
     populateVolume(vol, ROOT, PREPARE_VUE_PROJECT_FILES);
 
     const config = buildNeutralConfig(ROOT);
 
-    await runInitWithVolume(vol, ROOT, config, { skipAddComponents: false });
+    await runInitWithVolume(vol, ROOT, config, { skipAddComponents: false, silent: false });
 
     assertFileExists(vol, ROOT, 'components.json');
     const initComponentsJson = readJsonFromVolume<Record<string, any>>(vol, ROOT, 'components.json');
@@ -207,7 +310,19 @@ describe('browser-memfs: full flow (prepare -> init -> add button)', () => {
       'src/lib/utils.ts': INIT_VUE_PROJECT_FILES['src/lib/utils.ts'],
     });
 
-    await runAddWithVolume(vol, ROOT, ['button'], config);
+    // Verify init logs
+    expect(logMessages).toContainEqual('✔ Writing components.json.');
+    expect(logMessages).toContainEqual('✔ Checking registry.');
+    expect(logMessages).toContainEqual(
+      expect.stringContaining('✔ Updating CSS variables in')
+    );
+    expect(logMessages).toContainEqual('✔ Installing dependencies.');
+    expect(logMessages).toContainEqual('✔ Created 1 file:');
+    expect(logMessages).toContainEqual('  - src/lib/utils.ts');
+
+    const initLogCount = logMessages.length;
+
+    await runAddWithVolume(vol, ROOT, ['button'], config, { silent: false });
 
     assertVolumeContains(vol, ROOT, {
       'src/components/ui/button/Button.vue':
@@ -222,5 +337,13 @@ describe('browser-memfs: full flow (prepare -> init -> add button)', () => {
     expect(pkg.dependencies['clsx']).toBeDefined();
     expect(pkg.dependencies['tailwind-merge']).toBeDefined();
     expect(pkg.dependencies['lucide-vue-next']).toBeDefined();
+
+    // Verify add logs appear after init logs
+    const addLogs = logMessages.slice(initLogCount);
+    expect(addLogs).toContainEqual('✔ Checking registry.');
+    expect(addLogs).toContainEqual('✔ Installing dependencies.');
+    expect(addLogs).toContainEqual('✔ Created 2 files:');
+    expect(addLogs).toContainEqual('  - src/components/ui/button/Button.vue');
+    expect(addLogs).toContainEqual('  - src/components/ui/button/index.ts');
   });
 });

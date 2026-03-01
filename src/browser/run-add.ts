@@ -18,6 +18,11 @@ import path from 'pathe';
 import type { Volume } from 'memfs';
 import { buildMemfsConfig } from './config';
 
+export interface RunAddWithVolumeOptions {
+  /** @default true */
+  silent?: boolean;
+}
+
 /**
  * Run add against a memfs Volume. All file changes go to memfs.
  * Bypasses getConfig (which uses Node fs) by passing pre-built config.
@@ -27,8 +32,10 @@ export async function runAddWithVolume(
   vol: Volume,
   root: string,
   components: string[],
-  config: Config = buildMemfsConfig(root)
+  config: Config = buildMemfsConfig(root),
+  options: RunAddWithVolumeOptions = {}
 ) {
+  const { silent = true } = options;
   const container = new Container();
   container.load(addServiceModules);
   container
@@ -54,7 +61,7 @@ export async function runAddWithVolume(
 
   return addComponentsService.addComponents(components, config, {
     overwrite: true,
-    silent: true,
+    silent,
     skipDependenciesInstall: true,
     tailwindVersion: 'v4',
   });
