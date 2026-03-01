@@ -12,13 +12,17 @@
     "buffer": "^6.0.3",
     "events": "^3.3.0",
     "memfs": "^4.14.0",
+    "monaco-editor": "^0.55.1",
+    "monaco-editor-vue3": "^1.0.5",
     "os-browserify": "^0.3.0",
     "path-browserify": "^1.0.1",
     "readable-stream": "^4.7.0",
     "stream-browserify": "^3.0.0",
     "uni-cn": "file:../..",
     "util": "^0.12.5",
-    "vue": "^3.5.25"
+    "vue": "^3.5.25",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.2",

@@ -78,10 +78,7 @@ function resolveStubsPlugin() {
 }
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    resolveStubsPlugin(),
-  ],
+  plugins: [vue(), resolveStubsPlugin()],
   server: {
     proxy: {
       '/api/registry': {

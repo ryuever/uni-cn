@@ -1,32 +1,46 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import type { Volume } from 'memfs';
 
 const props = defineProps<{
-  runCreate: (options?: {
-    template?: string;
-    style?: string;
-    name?: string;
-  }) => Promise<boolean>;
+  runAdd: (components: string[], options?: { style?: string }) => Promise<boolean>;
+  runInit: (options?: { style?: string; baseColor?: string }) => Promise<boolean>;
+  vol: Volume;
+  root: string;
 }>();
 
-const template = ref('default');
-const style = ref('default');
-const name = ref('my-project');
+const componentInput = ref('button');
+const style = ref('new-york');
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-async function doCreate() {
+async function doAdd() {
   loading.value = true;
   error.value = null;
 
+  const components = componentInput.value
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!components.length) {
+    error.value = 'Enter at least one component (e.g. button, card)';
+    loading.value = false;
+    return;
+  }
+
   try {
-    await props.runCreate({
-      template: template.value,
-      style: style.value,
-      name: name.value,
-    });
+    const hasComponentsJson = props.vol.existsSync(
+      `${props.root}/components.json`
+    );
+
+    if (!hasComponentsJson) {
+      await props.runInit({ style: style.value });
+    }
+
+    await props.runAdd(components, { style: style.value });
   } catch {
-    error.value = 'Create failed. See terminal for details.';
+    error.value = 'Add failed. See terminal for details.';
   } finally {
     loading.value = false;
   }
@@ -36,26 +50,29 @@ async function doCreate() {
 <template>
   <div class="example">
     <section class="form">
-      <h2>Create</h2>
+      <h2>Add</h2>
       <p class="desc">
-        Create a new project from a template. Uses memfs.
+        Add components to your project. Run Init first if needed.
       </p>
       <div class="fields">
         <label>
-          <span>Template</span>
-          <input v-model="template" type="text" />
+          <span>Components (comma or space separated)</span>
+          <input
+            v-model="componentInput"
+            type="text"
+            placeholder="button, card, input"
+          />
         </label>
         <label>
           <span>Style</span>
-          <input v-model="style" type="text" />
-        </label>
-        <label>
-          <span>Project name</span>
-          <input v-model="name" type="text" />
+          <select v-model="style">
+            <option value="new-york">New York</option>
+            <option value="default">Default</option>
+          </select>
         </label>
       </div>
-      <button :disabled="loading" @click="doCreate">
-        {{ loading ? 'Running...' : 'Run Create' }}
+      <button :disabled="loading" @click="doAdd">
+        {{ loading ? 'Running...' : 'Run Add' }}
       </button>
     </section>
 

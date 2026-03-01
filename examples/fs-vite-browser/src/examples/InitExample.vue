@@ -1,65 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Volume } from 'memfs';
-import {
-  runInitWithVolume,
-  buildMemfsConfig,
-  defaultMemfsRawConfig,
-} from 'uni-cn/browser';
-import type { RawConfig } from 'uni-cn/browser';
 
-const root = ref('/project');
+const props = defineProps<{
+  runInit: (options?: { style?: string; baseColor?: string }) => Promise<boolean>;
+}>();
+
 const style = ref('new-york');
 const baseColor = ref('zinc');
 const loading = ref(false);
 const error = ref<string | null>(null);
-const result = ref<Record<string, string> | null>(null);
 
 const baseColors = [
-  'zinc',
-  'slate',
-  'stone',
-  'gray',
-  'neutral',
-  'red',
-  'rose',
-  'orange',
-  'green',
-  'blue',
-  'yellow',
-  'violet',
+  'zinc', 'slate', 'stone', 'gray', 'neutral', 'red', 'rose',
+  'orange', 'green', 'blue', 'yellow', 'violet',
 ];
 
-async function runInit() {
+async function doInit() {
   loading.value = true;
   error.value = null;
-  result.value = null;
 
   try {
-    const vol = new Volume();
-    vol.mkdirSync(root.value, { recursive: true });
-    vol.writeFileSync(
-      `${root.value}/package.json`,
-      JSON.stringify({ name: 'demo', private: true }, null, 2),
-      'utf-8'
-    );
-
-    const rawConfig: RawConfig = {
-      ...defaultMemfsRawConfig,
+    await props.runInit({
       style: style.value,
-      tailwind: {
-        ...defaultMemfsRawConfig.tailwind,
-        baseColor: baseColor.value,
-      },
-    };
-    const config = buildMemfsConfig(root.value, rawConfig);
-
-    await runInitWithVolume(vol, root.value, config);
-
-    const json = vol.toJSON();
-    result.value = json as Record<string, string>;
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e);
+      baseColor: baseColor.value,
+    });
+  } catch {
+    error.value = 'Init failed. See terminal for details.';
   } finally {
     loading.value = false;
   }
@@ -71,14 +37,9 @@ async function runInit() {
     <section class="form">
       <h2>Init</h2>
       <p class="desc">
-        Initialize components.json in a virtual project. Uses memfs; no
-        npm install.
+        Initialize components.json in a virtual project. Uses memfs.
       </p>
       <div class="fields">
-        <label>
-          <span>Root path</span>
-          <input v-model="root" type="text" />
-        </label>
         <label>
           <span>Style</span>
           <select v-model="style">
@@ -89,25 +50,16 @@ async function runInit() {
         <label>
           <span>Base color</span>
           <select v-model="baseColor">
-            <option v-for="c in baseColors" :key="c" :value="c">
-              {{ c }}
-            </option>
+            <option v-for="c in baseColors" :key="c" :value="c">{{ c }}</option>
           </select>
         </label>
       </div>
-      <button :disabled="loading" @click="runInit">
+      <button :disabled="loading" @click="doInit">
         {{ loading ? 'Running...' : 'Run Init' }}
       </button>
     </section>
 
-    <section v-if="error" class="error">
-      {{ error }}
-    </section>
-
-    <section v-if="result" class="output">
-      <h3>Generated files</h3>
-      <pre>{{ JSON.stringify(result, null, 2) }}</pre>
-    </section>
+    <section v-if="error" class="error">{{ error }}</section>
   </div>
 </template>
 
@@ -119,27 +71,24 @@ async function runInit() {
 }
 
 .form {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 1.25rem;
+  padding: 1rem;
 }
 
 .form h2 {
   margin: 0 0 0.5rem;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .desc {
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   color: #94a3b8;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .fields {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
@@ -147,11 +96,10 @@ async function runInit() {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  min-width: 140px;
 }
 
 .fields span {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #94a3b8;
 }
 
@@ -184,30 +132,12 @@ async function runInit() {
 }
 
 .error {
-  padding: 1rem;
+  padding: 0.75rem;
+  margin: 0 1rem 1rem;
   background: #7f1d1d;
   border: 1px solid #991b1b;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #fecaca;
-}
-
-.output {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 1.25rem;
-}
-
-.output h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-}
-
-.output pre {
-  margin: 0;
-  font-size: 0.8rem;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
+  font-size: 0.85rem;
 }
 </style>
