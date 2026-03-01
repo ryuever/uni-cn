@@ -4,7 +4,7 @@ import {
   createId,
   inject,
   injectable,
-} from '@/di';
+} from '@x-oasis/di';
 import type { PreFlightInitService } from '@/preflights/preflight-init';
 import { PreFlightInitServiceId } from '@/preflights/preflight-init';
 import {
@@ -16,9 +16,11 @@ import {
 } from '@/registry/api';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';
+import { IExitServiceId } from '@/services/env';
+import type { IExitService } from '@/services/env';
 import { AddComponentsServiceId } from '@/utils/add-components';
 import type { AddComponentsService } from '@/utils/add-components';
-import type { Config } from '@/utils/get-config';
+import type { Config, RawConfig } from '@/utils/get-config';
 import {
   DEFAULT_COMPONENTS,
   DEFAULT_TAILWIND_CONFIG,
@@ -81,6 +83,14 @@ export const initOptionsSchema = z.object({
       }
     ),
   style: z.string(),
+  /** When provided, skip getProjectConfig/getConfig. Use resolvedPaths if present to skip resolveConfigPaths (for memfs). */
+  config: z.custom<RawConfig | Config>().optional(),
+  /** When true, skip updateDependencies (npm install). Use for memfs where execa cannot run. */
+  skipDependenciesInstall: z.boolean().optional(),
+  /** When true, skip addComponents entirely. Use when getTSConfig/updateFiles cannot run (e.g. memfs without Node fs for tsconfig). */
+  skipAddComponents: z.boolean().optional(),
+  /** When provided, pass to addComponents to skip getProjectInfo (which uses Node fs glob). For memfs. */
+  tailwindVersion: z.enum(['v3', 'v4']).optional(),
 });
 
 export const PromptForMinimalConfigServiceId = createId(
@@ -104,7 +114,9 @@ export class InitCommandService {
     @inject(PromptForMinimalConfigServiceId)
     private readonly promptForMinimalConfigService: PromptForMinimalConfigService,
     @inject(UpdateTailwindContentServiceId)
-    private readonly updateTailwindContentService: UpdateTailwindContentService
+    private readonly updateTailwindContentService: UpdateTailwindContentService,
+    @inject(IExitServiceId)
+    private readonly exitService: IExitService
   ) {}
 
   async runInit(
@@ -113,10 +125,12 @@ export class InitCommandService {
     }
   ) {
     let projectInfo;
-    if (!options.skipPreflight) {
+    if (options.config) {
+      projectInfo = null;
+    } else if (!options.skipPreflight) {
       const preflight = await this.preFlightInitService.preFlightInit(options);
       if (preflight.errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT]) {
-        process.exit(1);
+        this.exitService.exit(1);
       }
       projectInfo = preflight.projectInfo;
     } else {
@@ -125,16 +139,20 @@ export class InitCommandService {
       );
     }
 
-    const projectConfig = await this.getProjectConfigService.getProjectConfig(
-      options.cwd,
-      projectInfo
+    const config = options.config ?? (
+      await (async () => {
+        const projectConfig = await this.getProjectConfigService.getProjectConfig(
+          options.cwd,
+          projectInfo
+        );
+        return projectConfig
+          ? await this.promptForMinimalConfigService.promptForMinimalConfig(
+              projectConfig,
+              options
+            )
+          : await promptForConfig(await getConfig(options.cwd));
+      })()
     );
-    const config = projectConfig
-      ? await this.promptForMinimalConfigService.promptForMinimalConfig(
-          projectConfig,
-          options
-        )
-      : await promptForConfig(await getConfig(options.cwd));
 
     if (!options.yes) {
       const { proceed } = await prompts({
@@ -147,33 +165,44 @@ export class InitCommandService {
       });
 
       if (!proceed) {
-        process.exit(0);
+        this.exitService.exit(0);
       }
     }
 
-    // Write components.json.
-    const componentSpinner = spinner(`Writing components.json.`).start();
+    // Write components.json (strip resolvedPaths which are runtime-only).
+    const componentSpinner = spinner(`Writing components.json.`, {
+      silent: options.silent,
+    }).start();
     const targetPath = path.resolve(options.cwd, 'components.json');
+    const { resolvedPaths: _rp, ...configForDisk } = config as Config & { resolvedPaths?: unknown };
     await this.fileSystemService.promisifyFs.writeFile(
       targetPath,
-      JSON.stringify(config, null, 2),
+      JSON.stringify(configForDisk, null, 2),
       'utf8'
     );
-    componentSpinner.succeed();
+    componentSpinner?.succeed();
+
+    if (options.skipAddComponents) {
+      return ('resolvedPaths' in config ? config : { ...config, resolvedPaths: {} }) as Config;
+    }
 
     // Add components.
-    const fullConfig = await resolveConfigPaths(options.cwd, config);
+    const fullConfig =
+      config && 'resolvedPaths' in config && (config as Config).resolvedPaths?.cwd
+        ? (config as Config)
+        : await resolveConfigPaths(options.cwd, config as RawConfig);
     const components = [
       ...(options.style === 'none' ? [] : [options.style]),
       ...(options.components ?? []),
     ];
     await this.addComponentsService.addComponents(components, fullConfig, {
-      // Init will always overwrite files.
       overwrite: true,
       silent: options.silent,
       style: options.style,
       isNewProject:
         options.isNewProject || projectInfo?.framework.name === 'nuxt',
+      skipDependenciesInstall: options.skipDependenciesInstall,
+      tailwindVersion: options.tailwindVersion,
     });
 
     // If a new project is using src dir, let's update the tailwind content config.
@@ -345,7 +374,7 @@ async function promptForConfig(defaultConfig: Config | null = null) {
   ]);
 
   return rawConfigSchema.parse({
-    $schema: 'https://shadcn-vue.com/schema.json',
+    $schema: 'https://ui.shadcn.com/schema.json',
     style: options.style,
     tailwind: {
       config: options.tailwindConfig,

@@ -1,12 +1,13 @@
 import * as ERRORS from '@/utils/errors';
 import { addServiceModules } from '@/commands/addService';
-import { Container, createId, inject, injectable } from '@/di';
+import { Container, createId, inject, injectable } from '@x-oasis/di';
 import {
   getRegistryIndex,
   getRegistryItem,
   isUrl,
 } from '@/registry/api';
 import { handleError } from '@/utils/handle-error';
+import { exitOrThrow } from '@/utils/exit';
 import { highlighter } from '@/utils/highlighter';
 import { logger } from '@/utils/logger';
 
@@ -26,6 +27,10 @@ import type { GetProjectInfoService } from '../utils/get-project-info';
 import { GetProjectInfoServiceId } from '../utils/get-project-info';
 import type { InitCommandService } from './init';
 import { InitCommandServiceId } from './init';
+import { IExitServiceId, ICwdServiceId } from '@/services/env';
+import type { IExitService, ICwdService } from '@/services/env';
+import type { CreateTemplateFilesService } from '@/utils/updaters/create-template-files';
+import { CreateTemplateFilesServiceId } from '@/utils/updaters/create-template-files';
 
 const DEPRECATED_COMPONENTS = [
   {
@@ -52,14 +57,16 @@ export const addOptionsSchema = z.object({
   silent: z.boolean(),
   srcDir: z.boolean().optional(),
   cssVariables: z.boolean(),
+  /** When true, skip npm install. For memfs. */
+  skipDependenciesInstall: z.boolean().optional(),
 });
 
 export const add = new Command()
   .name('add')
-  .description('add a component to your project')
+  .description('add a component or template to your project')
   .argument(
     '[components...]',
-    'the components to add or a url to the component.'
+    'the components to add, a url, or "template <name>" to scaffold from a template.'
   )
   .option('-y, --yes', 'skip confirmation prompt.', false)
   .option('-o, --overwrite', 'overwrite existing files.', false)
@@ -71,19 +78,28 @@ export const add = new Command()
   .option('-a, --all', 'add all available components', false)
   .option('-p, --path <path>', 'the path to add the component to.')
   .option('-s, --silent', 'mute output.', false)
-  // .option(
-  //   '--src-dir',
-  //   'use the src directory when creating a new project.',
-  //   false,
-  // )
-  // .option(
-  //   '--no-src-dir',
-  //   'do not use the src directory when creating a new project.',
-  // )
+  .option('-n, --name <name>', 'project name (used with template).', 'my-project')
+  .option('--style <style>', 'template style.', 'default')
   .option('--css-variables', 'use css variables for theming.', true)
   .option('--no-css-variables', 'do not use css variables for theming.')
   .action(async (components, opts) => {
     try {
+      const container = new Container();
+      container.load(addServiceModules);
+      const addService: AddCommandService = container.get(AddCommandServiceId);
+
+      // `add template [name]` — download template files as-is
+      if (components?.[0] === 'template') {
+        const templateName = components[1] ?? 'default';
+        await addService.runAddTemplate({
+          cwd: path.resolve(opts.cwd),
+          template: templateName,
+          style: opts.style ?? 'default',
+          name: opts.name ?? 'my-project',
+        });
+        return;
+      }
+
       const options = addOptionsSchema.parse({
         components: components ?? [],
         cwd: path.resolve(opts.cwd),
@@ -95,9 +111,6 @@ export const add = new Command()
         srcDir: opts.srcDir,
         cssVariables: opts.cssVariables,
       });
-      const container = new Container();
-      container.load(addServiceModules);
-      const addService = container.get(AddCommandServiceId);
       await addService.runAdd(options.components ?? [], options);
     } catch (error) {
       logger.break();
@@ -116,15 +129,21 @@ export class AddCommandService {
     @inject(PreFlightAddServiceId)
     private readonly preFlightAddService: PreFlightAddService,
     @inject(InitCommandServiceId)
-    private readonly initCommandService: InitCommandService
+    private readonly initCommandService: InitCommandService,
+    @inject(IExitServiceId)
+    private readonly exitService: IExitService,
+    @inject(CreateTemplateFilesServiceId)
+    private readonly createTemplateFilesService: CreateTemplateFilesService,
+    @inject(ICwdServiceId)
+    private readonly cwdService: ICwdService
   ) {}
 
   async runAdd(components: string[], opts: z.infer<typeof addOptionsSchema>) {
     try {
       const options = addOptionsSchema.parse({
+        ...opts,
         components,
         cwd: path.resolve(opts.cwd),
-        ...opts,
       });
 
       let itemType: z.infer<typeof registryItemTypeSchema> | undefined;
@@ -153,7 +172,7 @@ export class AddCommandService {
           logger.break();
           logger.log(`Installation cancelled.`);
           logger.break();
-          process.exit(1);
+          this.exitService.exit(1);
         }
       }
 
@@ -175,7 +194,7 @@ export class AddCommandService {
             logger.warn(highlighter.warn(component.message));
           });
           logger.break();
-          process.exit(1);
+          this.exitService.exit(1);
         }
       }
 
@@ -195,7 +214,7 @@ export class AddCommandService {
 
         if (!proceed) {
           logger.break();
-          process.exit(1);
+          this.exitService.exit(1);
         }
 
         config = await this.initCommandService.runInit({
@@ -227,6 +246,25 @@ export class AddCommandService {
       logger.break();
       handleError(error);
     }
+  }
+
+  /**
+   * Download a template from registry and write files as-is (no transforms).
+   * This is the `add template <name>` entry point.
+   */
+  async runAddTemplate(options: {
+    cwd?: string;
+    template?: string;
+    style?: string;
+    name?: string;
+  } = {}) {
+    const cwd = options.cwd || this.cwdService.cwd();
+    await this.createTemplateFilesService.createTemplateFiles(cwd, {
+      cwd,
+      template: options.template ?? 'default',
+      style: options.style ?? 'default',
+      name: options.name ?? 'my-project',
+    });
   }
 }
 
@@ -277,7 +315,7 @@ async function promptForRegistryComponents(
   if (!components?.length) {
     logger.warn('No components selected. Exiting.');
     logger.info('');
-    process.exit(1);
+    exitOrThrow(1);
   }
 
   const result = z.array(z.string()).safeParse(components);

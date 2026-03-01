@@ -1,7 +1,9 @@
 import * as ERRORS from '@/utils/errors';
 import type { addOptionsSchema } from '@/commands/add';
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import { FileSystemServiceId } from '@/services/file-system/constants';
+import { IExitServiceId } from '@/services/env';
+import type { IExitService } from '@/services/env';
 import type { IFileSystemService } from '@/services/file-system/types';
 import { getConfig } from '@/utils/get-config';
 import { highlighter } from '@/utils/highlighter';
@@ -16,7 +18,8 @@ export const PreFlightAddServiceId = createId('pre-flight-add-service-id');
 @injectable()
 export class PreFlightAddService {
   constructor(
-    @inject(FileSystemServiceId) private fileSystemService: IFileSystemService
+    @inject(FileSystemServiceId) private fileSystemService: IFileSystemService,
+    @inject(IExitServiceId) private exitService: IExitService
   ) {}
 
   async preFlightAdd(options: z.infer<typeof addOptionsSchema>) {
@@ -70,11 +73,11 @@ export class PreFlightAddService {
       );
       logger.error(
         `Learn more at ${highlighter.info(
-          'https://shadcn-vue.com/docs/components-json'
+          'https://ui.shadcn.com/docs/components-json'
         )}.`
       );
       logger.break();
-      process.exit(1);
+      this.exitService.exit(1);
     }
   }
 }

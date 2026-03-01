@@ -1,4 +1,4 @@
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 
 import type { CodemodPlugin } from 'vue-metamorph';
 
@@ -22,9 +22,10 @@ export class TransformTwPrefixService {
 
   async transformTwPrefix(opts: TransformOpts): Promise<CodemodPlugin> {
     const tailwindVersion =
-      await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
+      opts.tailwindVersion ??
+      (await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
         opts.config
-      );
+      ));
 
     return {
       type: 'codemod',

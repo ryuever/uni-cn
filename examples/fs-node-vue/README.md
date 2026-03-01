@@ -3,7 +3,7 @@
 ## run init
 
 ```bash 
-➜  uni-cn git:(main) REGISTRY_URL=https://shadcn-vue.com/r  npm run init -- --cwd ./examples/fs-node-vue
+➜  uni-cn git:(main) REGISTRY_URL=https://ui.shadcn.com/r  npm run init -- --cwd ./examples/fs-node-vue
 npm warn Unknown user config "home". This will stop working in the next major version of npm.
 npm warn Unknown user config "is-current". This will stop working in the next major version of npm.
 

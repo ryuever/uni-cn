@@ -1,5 +1,5 @@
 // import type { TransformCssVarsService } from './update-css-vars';
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import type {
   registryItemCssVarsSchema,
   registryItemTailwindSchema,

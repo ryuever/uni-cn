@@ -1,5 +1,5 @@
 /* eslint-disable prefer-const */
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import {
   iconsSchema,
   registryBaseColorSchema,
@@ -22,7 +22,6 @@ import path from 'pathe';
 
 import deepmerge from 'deepmerge';
 import { ofetch } from 'ofetch';
-import { ProxyAgent } from 'undici';
 
 import {
   isDelightlessWorkspaceProject,
@@ -32,17 +31,55 @@ import type { GetProjectTailwindVersionFromConfigService } from '../utils/get-pr
 import { GetProjectTailwindVersionFromConfigServiceId } from '../utils/get-project-info';
 import { highlighter } from '../utils/highlighter';
 
-const REGISTRY_URL =
-  process.env.REGISTRY_URL ?? 'https://fe-docs.devops.xiaohongshu.com/xswr/r';
-// const REGISTRY_URL = process.env.REGISTRY_URL ?? 'https://shadcn-vue.com/r';
+const REGISTRY_BASE =
+  typeof process !== 'undefined' && process.env?.REGISTRY_URL
+    ? process.env.REGISTRY_URL
+    : 'https://ui.shadcn.com/r';
 
+/**
+ * In browser, use same-origin proxy to avoid CORS. The Vite dev server proxies
+ * /api/registry to https://ui.shadcn.com.
+ */
+function getRegistryBaseUrl(): string {
+  const g = typeof globalThis !== 'undefined' ? globalThis : null;
+  const hasDocument = g && 'document' in g;
+  const hasLocation = g && 'location' in g;
+  const hostname =
+    hasLocation && typeof (g as { location?: { hostname?: string } }).location?.hostname === 'string'
+      ? (g as { location: { hostname: string } }).location.hostname
+      : '';
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  if (hasDocument || isLocalhost) {
+    return '/api/registry/r';
+  }
+  return REGISTRY_BASE;
+}
+  
 export const RegistryGetThemeServiceId = createId(
   'registry-get-theme-service-id'
 );
 
-const agent = process.env.https_proxy
-  ? new ProxyAgent(process.env.https_proxy)
-  : undefined;
+/** ProxyAgent is Node-only; in browser we use native fetch (dispatcher: undefined) */
+let _agent: InstanceType<typeof import('undici').ProxyAgent> | undefined | null =
+  null;
+async function getAgent() {
+  if (_agent !== null) return _agent;
+  if (
+    (typeof globalThis !== 'undefined' && 'document' in globalThis) ||
+    typeof process === 'undefined' ||
+    !process.env?.https_proxy
+  ) {
+    _agent = undefined;
+    return undefined;
+  }
+  try {
+    const { ProxyAgent } = await import('undici');
+    _agent = new ProxyAgent(process.env.https_proxy);
+  } catch {
+    _agent = undefined;
+  }
+  return _agent;
+}
 
 const registryCache = new Map<string, Promise<any>>();
 
@@ -73,15 +110,89 @@ export async function getRegistryIcons() {
   try {
     // const [result] = await fetchRegistry(['icons/index.json']);
 
-    const [result] = await fetchRegistry([
-      'https://ui.shadcn.com/r/icons/index.json',
-    ]);
+    const [result] = await fetchRegistry(['icons/index.json']);
     return iconsSchema.parse(result);
   } catch (error) {
     handleError(error);
     return {};
   }
 }
+
+/** Built-in default template when registry does not have styles/default/default.json */
+const DEFAULT_TEMPLATE_FALLBACK = {
+  name: 'default',
+  type: 'registry:block' as const,
+  files: [
+    {
+      path: 'templates/default/package.json',
+      content: JSON.stringify(
+        {
+          name: 'my-project',
+          private: true,
+          version: '0.0.0',
+          type: 'module',
+          scripts: { dev: 'vite', build: 'vite build', preview: 'vite preview' },
+          dependencies: { vue: '^3.4.0' },
+          devDependencies: { vite: '^5.0.0', '@vitejs/plugin-vue': '^5.0.0' },
+        },
+        null,
+        2
+      ),
+      type: 'registry:block' as const,
+    },
+    {
+      path: 'templates/default/src/App.vue',
+      content: `<script setup lang="ts">
+</script>
+
+<template>
+  <div>
+    <h1>Hello from uni-cn</h1>
+    <p>Default project template</p>
+  </div>
+</template>
+`,
+      type: 'registry:block' as const,
+    },
+    {
+      path: 'templates/default/src/main.ts',
+      content: `import { createApp } from 'vue'
+import App from './App.vue'
+
+createApp(App).mount('#app')
+`,
+      type: 'registry:block' as const,
+    },
+    {
+      path: 'templates/default/index.html',
+      content: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + Vue</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+`,
+      type: 'registry:block' as const,
+    },
+    {
+      path: 'templates/default/vite.config.ts',
+      content: `import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+})
+`,
+      type: 'registry:block' as const,
+    },
+  ],
+};
 
 export async function getRegistryTemplates(
   templateName: string,
@@ -97,6 +208,9 @@ export async function getRegistryTemplates(
     // TODO: 暂时先使用ItemSchema解析，后续需要使用TemplatesSchema解析a
     return registryItemSchema.parse(result);
   } catch (error) {
+    if (templateName === 'default' && style === 'default') {
+      return registryItemSchema.parse(DEFAULT_TEMPLATE_FALLBACK);
+    }
     handleError(error);
     return {};
   }
@@ -222,6 +336,7 @@ export async function getItemTargetPath(
 
 export async function fetchRegistry(paths: string[]) {
   try {
+    const dispatcher = await getAgent();
     const results = await Promise.all(
       paths.map(async (path) => {
         const url = getRegistryUrl(path);
@@ -233,7 +348,7 @@ export async function fetchRegistry(paths: string[]) {
 
         // Store the promise in the cache before awaiting
         const fetchPromise = ofetch(url, {
-          dispatcher: agent,
+          dispatcher,
           parseResponse: JSON.parse,
         }).catch((error) => {
           // Handle ofetch errors
@@ -535,7 +650,16 @@ function getRegistryUrl(path: string) {
     return url.toString();
   }
 
-  return `${REGISTRY_URL}/${path}`;
+  const base = getRegistryBaseUrl();
+
+  // In browser mode the base is a relative path (e.g. "/api/registry/r").
+  // resolveRegistryDependencies pushes already-resolved URLs back into the
+  // pipeline, so avoid double-prefixing when the path already starts with base.
+  if (path.startsWith('/') && path.startsWith(base)) {
+    return path;
+  }
+
+  return `${base}/${path}`;
 }
 
 export function isUrl(path: string) {

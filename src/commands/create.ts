@@ -1,4 +1,6 @@
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
+import { ICwdServiceId } from '@/services/env';
+import type { ICwdService } from '@/services/env';
 import { CreateTemplateFilesServiceId } from '@/utils/updaters/create-template-files';
 import type { CreateTemplateFilesService } from '@/utils/updaters/create-template-files';
 
@@ -18,12 +20,14 @@ export const CreateCommandServiceId = createId('create-command-service-id');
 export class CreateCommandService {
   constructor(
     @inject(CreateTemplateFilesServiceId)
-    private readonly createTemplateFilesService: CreateTemplateFilesService
+    private readonly createTemplateFilesService: CreateTemplateFilesService,
+    @inject(ICwdServiceId)
+    private readonly cwdService: ICwdService
   ) {}
 
   async runCreate(opts: z.infer<typeof createOptionsSchema>) {
     const options = createOptionsSchema.parse(opts);
-    const cwd = options.cwd || process.cwd();
+    const cwd = options.cwd || this.cwdService.cwd();
     await this.createTemplateFilesService.createTemplateFiles(cwd, options);
   }
 }

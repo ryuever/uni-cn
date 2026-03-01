@@ -1,24 +1,36 @@
 import { highlighter } from '@/utils/highlighter';
+import { notifyLog } from '@/utils/log-hook';
 
 import consola from 'consola';
 
 export const logger = {
   error(...args: unknown[]) {
-    consola.log(highlighter.error(args.join(' ')));
+    const text = args.join(' ');
+    notifyLog({ type: 'log', status: 'error', text });
+    consola.log(highlighter.error(text));
   },
   warn(...args: unknown[]) {
-    consola.log(highlighter.warn(args.join(' ')));
+    const text = args.join(' ');
+    notifyLog({ type: 'log', status: 'warn', text });
+    consola.log(highlighter.warn(text));
   },
   info(...args: unknown[]) {
-    consola.log(highlighter.info(args.join(' ')));
+    const text = args.join(' ');
+    notifyLog({ type: 'log', status: 'info', text });
+    consola.log(highlighter.info(text));
   },
   success(...args: unknown[]) {
-    consola.log(highlighter.success(args.join(' ')));
+    const text = args.join(' ');
+    notifyLog({ type: 'log', status: 'log', text });
+    consola.log(highlighter.success(text));
   },
   log(...args: unknown[]) {
-    consola.log(args.join(' '));
+    const text = args.join(' ');
+    notifyLog({ type: 'log', status: 'log', text });
+    consola.log(text);
   },
   break() {
+    notifyLog({ type: 'log', status: 'break', text: '' });
     consola.log('');
   },
 };

@@ -1,5 +1,5 @@
 /* eslint-disable prefer-const */
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import {
   fetchRegistry,
   getRegistryParentMap,
@@ -9,6 +9,8 @@ import {
 } from '@/registry/api';
 import type { RegistryResolveItemsTreeService } from '@/registry/api';
 import { registryItemSchema } from '@/registry/schema';
+import { FileSystemServiceId } from '@/services/file-system/constants';
+import type { IFileSystemService } from '@/services/file-system/types';
 import type {
   Config,
   configSchema,
@@ -19,6 +21,7 @@ import {
   findPackageRoot,
   getWorkspaceConfig,
 } from '@/utils/get-config';
+import { FRAMEWORKS } from '@/utils/frameworks';
 import { handleError } from '@/utils/handle-error';
 import { logger } from '@/utils/logger';
 import { spinner } from '@/utils/spinner';
@@ -63,6 +66,10 @@ export class AddComponentsService {
       silent?: boolean;
       isNewProject?: boolean;
       style?: string;
+      /** When true, skip updateDependencies (npm install). For memfs. */
+      skipDependenciesInstall?: boolean;
+      /** When provided, skip getProjectInfo (uses Node fs). For memfs. */
+      tailwindVersion?: 'v3' | 'v4';
     }
   ) {
     options = {
@@ -72,8 +79,6 @@ export class AddComponentsService {
       style: 'index',
       ...options,
     };
-
-    console.log('>>>>>> options ', options)
 
     const workspaceConfig = await getWorkspaceConfig(config);
     if (
@@ -94,7 +99,6 @@ export class AddComponentsService {
       );
     }
 
-    console.log('>>>>>> config ', config)
     return await this.addProjectComponentsService.addProjectComponents(
       components,
       config,
@@ -117,7 +121,9 @@ export class AddProjectComponentsService {
     @inject(RegistryResolveItemsTreeServiceId)
     private readonly registryResolveItemsTreeService: RegistryResolveItemsTreeService,
     @inject(UpdateFilesServiceId)
-    private readonly updateFilesService: UpdateFilesService
+    private readonly updateFilesService: UpdateFilesService,
+    @inject(FileSystemServiceId)
+    private readonly fileSystemService: IFileSystemService
   ) {}
 
   async addProjectComponents(
@@ -128,6 +134,9 @@ export class AddProjectComponentsService {
       silent?: boolean;
       isNewProject?: boolean;
       style?: string;
+      skipDependenciesInstall?: boolean;
+      /** When provided, skip getProjectInfo (uses Node fs). For memfs. */
+      tailwindVersion?: 'v3' | 'v4';
     }
   ) {
     const registrySpinner = spinner(`Checking registry.`, {
@@ -147,9 +156,10 @@ export class AddProjectComponentsService {
     registrySpinner?.succeed();
 
     const tailwindVersion =
-      await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
+      options.tailwindVersion ??
+      (await this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
         config
-      );
+      ));
 
     await this.updateTailwindConfigService.updateTailwindConfig(
       tree.tailwind?.config,
@@ -177,10 +187,25 @@ export class AddProjectComponentsService {
 
     await updateDependencies(tree.dependencies, tree.devDependencies, config, {
       silent: options.silent,
+      ...(options.skipDependenciesInstall && {
+        fileSystemService: this.fileSystemService,
+      }),
     });
+    const memfsMode = options.tailwindVersion !== undefined;
     await this.updateFilesService.updateFiles(tree.files, config, {
       overwrite: options.overwrite,
       silent: options.silent,
+      ...(memfsMode && {
+        projectInfo: {
+          framework: FRAMEWORKS.vite,
+          typescript: true,
+          tailwindConfigFile: null,
+          tailwindCssFile: 'src/style.css',
+          tailwindVersion: options.tailwindVersion ?? 'v4',
+          aliasPrefix: '@',
+        },
+        skipImportResolution: true,
+      }),
     });
 
     if (tree.docs) {
@@ -214,6 +239,7 @@ export class AddWorkspaceComponentsService {
       isNewProject?: boolean;
       isRemote?: boolean;
       style?: string;
+      skipDependenciesInstall?: boolean;
     }
   ) {
     const registrySpinner = spinner(`Checking registry.`, {
@@ -321,19 +347,12 @@ export class AddWorkspaceComponentsService {
       }
 
       // 4. Update dependencies.
-      await Promise.allSettled([
-        component.dependencies && component.dependencies.length
-          ? updateDependencies(component.dependencies, targetConfig, {
-              silent: true,
-            })
-          : Promise.resolve(),
-        component.devDependencies && component.devDependencies.length
-          ? updateDependencies(component.devDependencies, targetConfig, {
-              silent: true,
-              dev: true,
-            })
-          : Promise.resolve(),
-      ]);
+      await updateDependencies(
+        component.dependencies,
+        component.devDependencies,
+        targetConfig,
+        { silent: true }
+      );
 
       // 5. Update files.
       const files = await this.updateFilesService.updateFiles(
@@ -435,3 +454,4 @@ async function shouldOverwriteCssVars(
       component.type === 'registry:theme' || component.type === 'registry:style'
   );
 }
+

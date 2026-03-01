@@ -1,5 +1,6 @@
 import { highlighter } from '@/utils/highlighter';
 import { logger } from '@/utils/logger';
+import { exitOrThrow } from '@/utils/exit';
 
 import { z } from 'zod';
 
@@ -12,7 +13,7 @@ export function handleError(error: unknown) {
   if (typeof error === 'string') {
     logger.error(error);
     logger.break();
-    process.exit(1);
+    exitOrThrow(1);
   }
 
   if (error instanceof z.ZodError) {
@@ -21,15 +22,15 @@ export function handleError(error: unknown) {
       logger.error(`- ${highlighter.info(key)}: ${value}`);
     }
     logger.break();
-    process.exit(1);
+    exitOrThrow(1);
   }
 
   if (error instanceof Error) {
     logger.error(error.message);
     logger.break();
-    process.exit(1);
+    exitOrThrow(1);
   }
 
   logger.break();
-  process.exit(1);
+  exitOrThrow(1);
 }

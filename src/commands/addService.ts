@@ -8,7 +8,15 @@ import {
   PromptForMinimalConfigService,
   PromptForMinimalConfigServiceId,
 } from '@/commands/init';
-import { Container, Registry } from '@/di';
+import { Container, Registry } from '@x-oasis/di';
+import {
+  ICwdServiceId,
+  IExitServiceId,
+  ITempDirServiceId,
+  NodeCwdService,
+  NodeExitService,
+  NodeTempDirService,
+} from '@/services/env';
 import {
   PreFlightAddService,
   PreFlightAddServiceId,
@@ -93,6 +101,10 @@ import {
   UpdateTailwindContentService,
   UpdateTailwindContentServiceId,
 } from '@/utils/updaters/update-tailwind-content';
+import {
+  CreateTemplateFilesService,
+  CreateTemplateFilesServiceId,
+} from '@/utils/updaters/create-template-files';
 
 export const addServiceModules = new Registry((bind) => {
   bind(AddCommandServiceId).to(AddCommandService);
@@ -128,7 +140,11 @@ export const addServiceModules = new Registry((bind) => {
   bind(ParseObjectLiteralServiceId).to(ParseObjectLiteralService);
   bind(UpdateTailwindConfigServiceId).to(UpdateTailwindConfigService);
   bind(UpdateCssServiceId).to(UpdateCssService);
+  bind(CreateTemplateFilesServiceId).to(CreateTemplateFilesService);
   bind(FileSystemServiceId).to(NodeFileSystem);
+  bind(ICwdServiceId).to(NodeCwdService);
+  bind(ITempDirServiceId).to(NodeTempDirService);
+  bind(IExitServiceId).to(NodeExitService);
 });
 
 // const container = new Container();

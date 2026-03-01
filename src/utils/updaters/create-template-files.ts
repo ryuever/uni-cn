@@ -1,12 +1,12 @@
 import type { createOptionsSchema } from '@/commands/create';
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import { getRegistryTemplates } from '@/registry/api';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';
 
 import type { z } from 'zod';
 
-import * as path from 'path'
+import path from 'pathe'
 
 export const CreateTemplateFilesServiceId = createId(
   'create-template-files-service-id'

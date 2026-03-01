@@ -1,4 +1,4 @@
-import { createId, inject, injectable } from '@/di';
+import { createId, inject, injectable } from '@x-oasis/di';
 import type { registryItemCssSchema } from '@/registry/schema';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import type { IFileSystemService } from '@/services/file-system/types';
