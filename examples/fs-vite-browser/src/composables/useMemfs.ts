@@ -3,7 +3,7 @@ import { Volume } from 'memfs';
 import {
   runInitWithVolume,
   runAddWithVolume,
-  runCreateWithVolume,
+  runAddTemplateWithVolume,
   buildMemfsConfig,
   defaultMemfsRawConfig,
   setLogListener,
@@ -113,18 +113,18 @@ export function useMemfs() {
   } = {}) {
     ensureProject();
     clearLogs();
-    writeLog(`$ npx uni-cn create ${options.name ?? 'my-project'}`);
-    writeLog('Running create...');
+    writeLog(`$ npx uni-cn add template ${options.template ?? 'default'}`);
+    writeLog('Running add template...');
     try {
       await withLogListener(() =>
-        runCreateWithVolume(vol.value, root.value, {
+        runAddTemplateWithVolume(vol.value, root.value, {
           template: options.template ?? 'default',
           style: options.style ?? 'default',
           name: options.name ?? 'my-project',
         })
       );
       refreshKey.value++;
-      writeLog('Create complete.');
+      writeLog('Add template complete.');
       return true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

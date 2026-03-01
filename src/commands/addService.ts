@@ -101,6 +101,10 @@ import {
   UpdateTailwindContentService,
   UpdateTailwindContentServiceId,
 } from '@/utils/updaters/update-tailwind-content';
+import {
+  CreateTemplateFilesService,
+  CreateTemplateFilesServiceId,
+} from '@/utils/updaters/create-template-files';
 
 export const addServiceModules = new Registry((bind) => {
   bind(AddCommandServiceId).to(AddCommandService);
@@ -136,6 +140,7 @@ export const addServiceModules = new Registry((bind) => {
   bind(ParseObjectLiteralServiceId).to(ParseObjectLiteralService);
   bind(UpdateTailwindConfigServiceId).to(UpdateTailwindConfigService);
   bind(UpdateCssServiceId).to(UpdateCssService);
+  bind(CreateTemplateFilesServiceId).to(CreateTemplateFilesService);
   bind(FileSystemServiceId).to(NodeFileSystem);
   bind(ICwdServiceId).to(NodeCwdService);
   bind(ITempDirServiceId).to(NodeTempDirService);

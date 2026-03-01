@@ -1,5 +1,7 @@
 import { Container } from '@x-oasis/di';
 import { addServiceModules } from '@/commands/addService';
+import { AddCommandServiceId } from '@/commands/add';
+import type { AddCommandService } from '@/commands/add';
 import { MemFileSystem } from '@/services/file-system/MemFileSystem';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import {
@@ -24,18 +26,9 @@ export interface RunAddWithVolumeOptions {
 }
 
 /**
- * Run add against a memfs Volume. All file changes go to memfs.
- * Bypasses getConfig (which uses Node fs) by passing pre-built config.
- * npm install is skipped since execa cannot run against memfs paths.
+ * Build a DI container configured for memfs/browser add operations.
  */
-export async function runAddWithVolume(
-  vol: Volume,
-  root: string,
-  components: string[],
-  config: Config = buildMemfsConfig(root),
-  options: RunAddWithVolumeOptions = {}
-) {
-  const { silent = true } = options;
+function createAddContainer(vol: Volume, root: string) {
   const container = new Container();
   container.load(addServiceModules);
   container
@@ -55,6 +48,23 @@ export async function runAddWithVolume(
     .toConstantValue({
       getProjectTailwindVersionFromConfig: async () => 'v4' as const,
     });
+  return container;
+}
+
+/**
+ * Run add against a memfs Volume. All file changes go to memfs.
+ * Bypasses getConfig (which uses Node fs) by passing pre-built config.
+ * npm install is skipped since execa cannot run against memfs paths.
+ */
+export async function runAddWithVolume(
+  vol: Volume,
+  root: string,
+  components: string[],
+  config: Config = buildMemfsConfig(root),
+  options: RunAddWithVolumeOptions = {}
+) {
+  const { silent = true } = options;
+  const container = createAddContainer(vol, root);
 
   const addComponentsService: AddComponentsService =
     container.get(AddComponentsServiceId);
@@ -64,5 +74,33 @@ export async function runAddWithVolume(
     silent,
     skipDependenciesInstall: true,
     tailwindVersion: 'v4',
+  });
+}
+
+export interface RunAddTemplateWithVolumeOptions {
+  template?: string;
+  style?: string;
+  name?: string;
+}
+
+/**
+ * Run `add template` against a memfs Volume. Downloads registry template
+ * files and writes them as-is (no transforms).
+ */
+export async function runAddTemplateWithVolume(
+  vol: Volume,
+  root: string,
+  options: RunAddTemplateWithVolumeOptions = {}
+) {
+  const container = createAddContainer(vol, root);
+
+  const addService: AddCommandService =
+    container.get(AddCommandServiceId);
+
+  return addService.runAddTemplate({
+    cwd: root,
+    template: options.template ?? 'default',
+    style: options.style ?? 'default',
+    name: options.name ?? 'my-project',
   });
 }
