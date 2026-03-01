@@ -5,7 +5,7 @@ import FileTree from './components/FileTree.vue';
 import MonacoEditor from './components/MonacoEditor.vue';
 import TerminalLog from './components/TerminalLog.vue';
 
-const tab = ref<'init' | 'create' | 'add'>('init');
+const tab = ref<'init' | 'add'>('init');
 const expandedPaths = ref(new Set<string>(['/project']));
 
 const {
@@ -68,10 +68,6 @@ const InitExample = defineAsyncComponent({
   loader: () => import('./examples/InitExample.vue'),
   errorComponent: ErrorFallback,
 });
-const CreateExample = defineAsyncComponent({
-  loader: () => import('./examples/CreateExample.vue'),
-  errorComponent: ErrorFallback,
-});
 const AddExample = defineAsyncComponent({
   loader: () => import('./examples/AddExample.vue'),
   errorComponent: ErrorFallback,
@@ -83,7 +79,7 @@ const AddExample = defineAsyncComponent({
     <header class="app-header">
       <h1>uni-cn Browser Demo</h1>
       <p class="subtitle">
-        CodeSandbox-like demo: init, create, and add components in the browser
+        CodeSandbox-like demo: init and add components/templates in the browser
       </p>
     </header>
 
@@ -109,12 +105,6 @@ const AddExample = defineAsyncComponent({
             Init
           </button>
           <button
-            :class="{ active: tab === 'create' }"
-            @click="tab = 'create'"
-          >
-            Create
-          </button>
-          <button
             :class="{ active: tab === 'add' }"
             @click="tab = 'add'"
           >
@@ -130,13 +120,10 @@ const AddExample = defineAsyncComponent({
                 :run-init="runInit"
                 :prepare-for-init="prepareForInit"
               />
-              <CreateExample
-                v-else-if="tab === 'create'"
-                :run-create="runCreate"
-              />
               <AddExample
                 v-else
                 :run-add="runAdd"
+                :run-create="runCreate"
                 :run-init="runInit"
                 :vol="vol"
                 :root="root"

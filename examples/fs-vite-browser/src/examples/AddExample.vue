@@ -1,46 +1,70 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import type { Volume } from 'memfs';
 
 const props = defineProps<{
   runAdd: (components: string[], options?: { style?: string }) => Promise<boolean>;
+  runCreate: (options?: { template?: string; style?: string; name?: string }) => Promise<boolean>;
   runInit: (options?: { style?: string; baseColor?: string }) => Promise<boolean>;
   vol: Volume;
   root: string;
 }>();
 
+const addType = ref<'component' | 'template'>('component');
 const componentInput = ref('button');
 const style = ref('new-york');
+const templateName = ref('default');
+const templateStyle = ref('default');
+const projectName = ref('my-project');
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+const title = computed(() => addType.value === 'component' ? 'Add Component' : 'Add Template');
+const desc = computed(() =>
+  addType.value === 'component'
+    ? 'Add components to your project. Run Init first if needed.'
+    : 'Download a template and scaffold files as-is into the virtual project.'
+);
+const buttonLabel = computed(() =>
+  loading.value
+    ? 'Running...'
+    : addType.value === 'component' ? 'Run Add' : 'Run Add Template'
+);
 
 async function doAdd() {
   loading.value = true;
   error.value = null;
 
-  const components = componentInput.value
-    .split(/[\s,]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  if (!components.length) {
-    error.value = 'Enter at least one component (e.g. button, card)';
-    loading.value = false;
-    return;
-  }
-
   try {
-    const hasComponentsJson = props.vol.existsSync(
-      `${props.root}/components.json`
-    );
+    if (addType.value === 'template') {
+      await props.runCreate({
+        template: templateName.value,
+        style: templateStyle.value,
+        name: projectName.value,
+      });
+    } else {
+      const components = componentInput.value
+        .split(/[\s,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
 
-    if (!hasComponentsJson) {
-      await props.runInit({ style: style.value });
+      if (!components.length) {
+        error.value = 'Enter at least one component (e.g. button, card)';
+        loading.value = false;
+        return;
+      }
+
+      const hasComponentsJson = props.vol.existsSync(
+        `${props.root}/components.json`
+      );
+      if (!hasComponentsJson) {
+        await props.runInit({ style: style.value });
+      }
+
+      await props.runAdd(components, { style: style.value });
     }
-
-    await props.runAdd(components, { style: style.value });
   } catch {
-    error.value = 'Add failed. See terminal for details.';
+    error.value = `${title.value} failed. See terminal for details.`;
   } finally {
     loading.value = false;
   }
@@ -51,28 +75,53 @@ async function doAdd() {
   <div class="example">
     <section class="form">
       <h2>Add</h2>
-      <p class="desc">
-        Add components to your project. Run Init first if needed.
-      </p>
+      <p class="desc">{{ desc }}</p>
+
       <div class="fields">
         <label>
-          <span>Components (comma or space separated)</span>
-          <input
-            v-model="componentInput"
-            type="text"
-            placeholder="button, card, input"
-          />
-        </label>
-        <label>
-          <span>Style</span>
-          <select v-model="style">
-            <option value="new-york">New York</option>
-            <option value="default">Default</option>
+          <span>Type</span>
+          <select v-model="addType">
+            <option value="component">Component</option>
+            <option value="template">Template</option>
           </select>
         </label>
+
+        <template v-if="addType === 'component'">
+          <label>
+            <span>Components (comma or space separated)</span>
+            <input
+              v-model="componentInput"
+              type="text"
+              placeholder="button, card, input"
+            />
+          </label>
+          <label>
+            <span>Style</span>
+            <select v-model="style">
+              <option value="new-york">New York</option>
+              <option value="default">Default</option>
+            </select>
+          </label>
+        </template>
+
+        <template v-else>
+          <label>
+            <span>Template</span>
+            <input v-model="templateName" type="text" placeholder="default" />
+          </label>
+          <label>
+            <span>Style</span>
+            <input v-model="templateStyle" type="text" placeholder="default" />
+          </label>
+          <label>
+            <span>Project name</span>
+            <input v-model="projectName" type="text" placeholder="my-project" />
+          </label>
+        </template>
       </div>
+
       <button :disabled="loading" @click="doAdd">
-        {{ loading ? 'Running...' : 'Run Add' }}
+        {{ buttonLabel }}
       </button>
     </section>
 
