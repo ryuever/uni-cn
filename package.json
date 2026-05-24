@@ -1,5 +1,5 @@
 {
-  "name": "@x-oasis/uni-cn",
+  "name": "uni-cn",
   "type": "module",
   "version": "0.0.3",
   "description": "Headless CLI for adding components - DI-based, supports memfs for testing and non-Node environments",
@@ -38,9 +38,6 @@
   "files": [
     "dist"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "dev": "tsdown --watch",
     "build": "tsdown",

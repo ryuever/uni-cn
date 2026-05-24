@@ -1,4 +1,4 @@
-# @x-oasis/uni-cn
+# uni-cn
 
 A headless, environment-agnostic reimplementation of the shadcn-vue CLI. Powered by Dependency Injection, it runs the same init / add commands on real disk (Node.js) or entirely in-memory (browser with memfs) — no server required.
 
@@ -13,7 +13,7 @@ A headless, environment-agnostic reimplementation of the shadcn-vue CLI. Powered
 
 ## Usage Modes
 
-@x-oasis/uni-cn can be used in two ways:
+uni-cn can be used in two ways:
 
 | Mode | Entry | Suitable for |
 |------|-------|-------------|
@@ -24,8 +24,8 @@ And two runtime environments:
 
 | Environment | Filesystem | Dependency Install | Import Path |
 |-------------|-----------|-------------------|-------------|
-| **Node.js** | Real disk (`NodeFileSystem`) | `npm install` via execa | `@x-oasis/uni-cn` |
-| **Browser** | In-memory (`MemFileSystem` / memfs `Volume`) | Writes `package.json` directly (no npm) | `@x-oasis/uni-cn/browser` |
+| **Node.js** | Real disk (`NodeFileSystem`) | `npm install` via execa | `uni-cn` |
+| **Browser** | In-memory (`MemFileSystem` / memfs `Volume`) | Writes `package.json` directly (no npm) | `uni-cn/browser` |
 
 ---
 
@@ -42,20 +42,20 @@ pnpm build
 
 ```bash
 # Initialize a project (interactive prompts)
-npx @x-oasis/uni-cn init
+npx uni-cn init
 
 # Initialize with defaults, skip prompts
-npx @x-oasis/uni-cn init -y -d
+npx uni-cn init -y -d
 
 # Add components
-npx @x-oasis/uni-cn add button -y
-npx @x-oasis/uni-cn add button card dialog -y
+npx uni-cn add button -y
+npx uni-cn add button card dialog -y
 
 # Add all available components
-npx @x-oasis/uni-cn add -a -y
+npx uni-cn add -a -y
 
 # Add a template (scaffold files as-is from registry)
-npx @x-oasis/uni-cn add template default --name my-project --style default
+npx uni-cn add template default --name my-project --style default
 ```
 
 ### Environment Variables
@@ -66,7 +66,7 @@ npx @x-oasis/uni-cn add template default --name my-project --style default
 | `COMPONENTS_REGISTRY_URL` | Alias for `REGISTRY_URL` | — |
 
 ```bash
-REGISTRY_URL=https://ui.shadcn.com/r npx @x-oasis/uni-cn init -y -d
+REGISTRY_URL=https://ui.shadcn.com/r npx uni-cn init -y -d
 ```
 
 ---
@@ -75,10 +75,10 @@ REGISTRY_URL=https://ui.shadcn.com/r npx @x-oasis/uni-cn init -y -d
 
 ### Node.js
 
-Import from `@x-oasis/uni-cn`. Operations use real filesystem and can run `npm install`.
+Import from `uni-cn`. Operations use real filesystem and can run `npm install`.
 
 ```ts
-import { runInit } from '@x-oasis/uni-cn';
+import { runInit } from 'uni-cn';
 
 // Quick init — uses DI container internally
 await runInit({
@@ -97,8 +97,8 @@ For more control (e.g. customizing DI bindings):
 
 ```ts
 import { Container } from '@x-oasis/di';
-import { initServiceModules } from '@x-oasis/uni-cn';
-import { InitCommandServiceId } from '@x-oasis/uni-cn';
+import { initServiceModules } from 'uni-cn';
+import { InitCommandServiceId } from 'uni-cn';
 
 const container = new Container();
 container.load(initServiceModules);
@@ -109,7 +109,7 @@ await initService.runInit({ cwd: '/my-project', yes: true, /* ... */ });
 
 ### Browser (memfs)
 
-Import from `@x-oasis/uni-cn/browser`. All I/O goes through a memfs `Volume` — no real filesystem or shell is involved.
+Import from `uni-cn/browser`. All I/O goes through a memfs `Volume` — no real filesystem or shell is involved.
 
 **Key differences from Node.js:**
 
@@ -126,7 +126,7 @@ import {
   runAddTemplateWithVolume,
   buildMemfsConfig,
   setLogListener,
-} from '@x-oasis/uni-cn/browser';
+} from 'uni-cn/browser';
 
 const vol = new Volume();
 const root = '/project';
@@ -162,7 +162,7 @@ setLogListener(null);
 
 ### API Reference
 
-#### `@x-oasis/uni-cn` (Node.js)
+#### `uni-cn` (Node.js)
 
 | Export | Description |
 |--------|------------|
@@ -170,7 +170,7 @@ setLogListener(null);
 | `getRegistryIndex(config)` | Fetch registry index |
 | `getRegistryItem(name, config)` | Fetch a single registry item |
 
-#### `@x-oasis/uni-cn/browser` (Browser / Memfs)
+#### `uni-cn/browser` (Browser / Memfs)
 
 | Export | Description |
 |--------|------------|
@@ -252,13 +252,12 @@ pnpm changeset
 Merging changesets into `main` opens or updates the release PR. Merging that release PR publishes the package to npm through the
 `NPM Release` GitHub Actions workflow, which requires:
 
-- `NPM_TOKEN`: an npm token allowed to publish `@x-oasis/uni-cn`.
+- `NPM_TOKEN`: an npm token allowed to publish `uni-cn`.
 - Either enable `Allow GitHub Actions to create and approve pull requests` in repository Actions settings, or add `CHANGESETS_TOKEN`
   as a fine-grained GitHub PAT with read/write access to Contents and Pull requests.
 
-If the package has never been published before, `NPM_TOKEN` must be able to create new public packages for the npm account or
-organization. If the token cannot create the package, npm returns a 404 during `PUT https://registry.npmjs.org/<package>`.
-For the `@x-oasis` scope, make sure the token owner has publish access to that npm user or organization scope.
+If the package has never been published before, `NPM_TOKEN` must be able to create new public packages for the npm account.
+If the token cannot create the package, npm returns a 404 during `PUT https://registry.npmjs.org/<package>`.
 
 ### Browser Demo
 
