@@ -79,8 +79,8 @@ jobs:
           if [[ "$PACKAGE_NAME" == @*/* ]]; then
             PACKAGE_SCOPE="${PACKAGE_NAME%%/*}"
             echo "Checking npm access for $PACKAGE_SCOPE"
-            npm access ls-packages "$PACKAGE_SCOPE" --registry=https://registry.npmjs.org
-            if ! npm access ls-packages "$PACKAGE_SCOPE" --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            npm access list packages "$PACKAGE_SCOPE" --registry=https://registry.npmjs.org
+            if ! npm access list packages "$PACKAGE_SCOPE" --registry=https://registry.npmjs.org >/dev/null 2>&1; then
               echo "::error::NPM_TOKEN cannot list packages for $PACKAGE_SCOPE. Grant this token organization/scope access and permission to create or publish packages in $PACKAGE_SCOPE."
               exit 1
             fi
