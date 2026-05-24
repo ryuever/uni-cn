@@ -1,5 +1,11 @@
 # @xport/uni-cn
 
+## 1.1.2
+
+### Patch Changes
+
+- c4c44cc: feat: changeset
+
 ## 1.1.1
 
 ### Patch Changes
