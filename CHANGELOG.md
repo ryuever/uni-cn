@@ -1,5 +1,11 @@
 # @x-oasis/uni-cn
 
+## 0.0.2
+
+### Patch Changes
+
+- 5dc12ab: feat: update
+
 ## 1.1.5
 
 ### Patch Changes
