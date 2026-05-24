@@ -70,6 +70,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Check npm publish token
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm whoami --registry=https://registry.npmjs.org
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          if ! npm view "$PACKAGE_NAME" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "::notice::Package $PACKAGE_NAME is not published on npm yet. The first publish requires an NPM_TOKEN that can create new public packages for this npm account or organization."
+          fi
+
       - name: Create release PR or publish to npm
         id: changesets
         uses: changesets/action@v1

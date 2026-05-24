@@ -256,6 +256,9 @@ Merging changesets into `main` opens or updates the release PR. Merging that rel
 - Either enable `Allow GitHub Actions to create and approve pull requests` in repository Actions settings, or add `CHANGESETS_TOKEN`
   as a fine-grained GitHub PAT with read/write access to Contents and Pull requests.
 
+If the package has never been published before, `NPM_TOKEN` must be able to create new public packages for the npm account or
+organization. If the token cannot create the package, npm returns a 404 during `PUT https://registry.npmjs.org/<package>`.
+
 ### Browser Demo
 
 ```bash
