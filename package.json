@@ -1,7 +1,7 @@
 {
   "name": "uni-cn",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Headless CLI for adding components - DI-based, supports memfs for testing and non-Node environments",
   "license": "MIT",
   "packageManager": "pnpm@10.11.0",
