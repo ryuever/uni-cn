@@ -1,5 +1,11 @@
 # @x-oasis/uni-cn
 
+## 1.1.3
+
+### Patch Changes
+
+- 4cfede8: feat: update org
+
 ## 1.1.2
 
 ### Patch Changes
