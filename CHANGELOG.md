@@ -1,5 +1,11 @@
 # uni-cn
 
+## 1.1.1
+
+### Patch Changes
+
+- 9658202: feat: patch
+
 ## 1.1.0
 
 ### Minor Changes
