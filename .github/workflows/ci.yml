@@ -1,89 +1,45 @@
-name: Git Flow CI
+name: CI
 
 on:
   push:
     branches:
       - main
-      - develop
-      - 'feature/**'
-      - 'release/**'
-      - 'hotfix/**'
   pull_request:
     branches:
       - main
-      - develop
-      - 'release/**'
-      - 'hotfix/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint:
+  ci:
+    name: CI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Typecheck
+        run: pnpm run typecheck
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
+      - name: Lint
+        run: pnpm run lint
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
+      - name: Tests
+        run: pnpm run test
 
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test
-
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - name: Build
+        run: pnpm run build

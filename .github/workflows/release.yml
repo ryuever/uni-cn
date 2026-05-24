@@ -1,130 +1,51 @@
-name: NPM Release
+name: Release
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      dry-run:
-        description: 'Run npm publish dry-run instead of releasing'
-        required: false
-        default: false
-        type: boolean
 
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
-
   release:
-    needs: validate
-    if: ${{ github.event_name == 'push' || !inputs['dry-run'] }}
+    name: Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      id-token: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
-      - name: Check release PR token mode
-        env:
-          CHANGESETS_TOKEN: ${{ secrets.CHANGESETS_TOKEN }}
-        run: |
-          if [ -z "$CHANGESETS_TOKEN" ]; then
-            echo "::notice::CHANGESETS_TOKEN is not set. Falling back to GITHUB_TOKEN; make sure repository Actions settings allow GitHub Actions to create pull requests."
-          fi
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - run: pnpm install --frozen-lockfile
+      - name: Build packages
+        run: pnpm run build
 
-      - name: Check npm publish token
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm whoami --registry=https://registry.npmjs.org
-          PACKAGE_NAME="$(node -p "require('./package.json').name")"
-          if [[ "$PACKAGE_NAME" == @*/* ]]; then
-            PACKAGE_SCOPE="${PACKAGE_NAME%%/*}"
-            echo "Checking npm access for $PACKAGE_SCOPE"
-            npm access list packages "$PACKAGE_SCOPE" --registry=https://registry.npmjs.org
-            if ! npm access list packages "$PACKAGE_SCOPE" --registry=https://registry.npmjs.org >/dev/null 2>&1; then
-              echo "::error::NPM_TOKEN cannot list packages for $PACKAGE_SCOPE. Grant this token organization/scope access and permission to create or publish packages in $PACKAGE_SCOPE."
-              exit 1
-            fi
-          fi
-          if ! npm view "$PACKAGE_NAME" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
-            echo "::notice::Package $PACKAGE_NAME is not published on npm yet. The first publish requires an NPM_TOKEN that can create new public packages for this npm account or organization."
-          fi
+      - name: Typecheck
+        run: pnpm run typecheck
 
-      - name: Create release PR or publish to npm
+      - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@v1
         with:
-          version: pnpm changeset:version
-          publish: pnpm release
-          commit: 'chore: release'
-          title: 'chore: release'
-          createGithubReleases: true
+          publish: pnpm run release
+          version: pnpm run version
+          commit: 'chore: release packages'
+          title: 'chore: release packages'
         env:
-          GITHUB_TOKEN: ${{ secrets.CHANGESETS_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  dry-run:
-    needs: validate
-    if: ${{ inputs['dry-run'] }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          registry-url: https://registry.npmjs.org
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-
-      - name: NPM publish dry run
-        run: pnpm publish --access public --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

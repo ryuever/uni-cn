@@ -52,9 +52,10 @@
     "test:update": "vitest run -u",
     "test:ui": "vitest --ui",
     "changeset": "changeset",
+    "version": "changeset version",
     "changeset:version": "changeset version",
     "changeset:publish": "pnpm build && changeset publish",
-    "release": "pnpm changeset:publish",
+    "release": "pnpm run build && changeset publish",
     "add": "node ./dist/cli.mjs add",
     "init": "node ./dist/cli.mjs init"
   },
