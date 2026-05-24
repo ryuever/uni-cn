@@ -33,7 +33,7 @@ export class CreateTemplateFilesService {
       throw new Error(`>>>>>>>> Template ${template} not found`);
     }
 
-    const templateFiles = templateFile.files;
+    const templateFiles = templateFile.files ?? [];
 
 
     for (const file of templateFiles) {
@@ -52,10 +52,12 @@ export class CreateTemplateFilesService {
         await this.fileSystemService.promisifyFs.mkdir(targetDir, {
           recursive: true,
         });
-        await this.fileSystemService.promisifyFs.writeFile(
-          filePath,
-          file.content
-        );
+        if (file.content) {
+          await this.fileSystemService.promisifyFs.writeFile(
+            filePath,
+            file.content
+          );
+        }
       } catch (error) {
         console.error('>>>>>> error ', error)
       }

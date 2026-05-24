@@ -43,4 +43,4 @@ export const create = new Command()
   .option('-t, --template <template>', 'the template to use.', 'default')
   .option('-s, --style <style>', 'the style to install.', 'default')
   .option('-n, --name <name>', 'the name of the project.', 'my-project')
-  .action(async (opts: z.infer<typeof createOptionsSchema>) => {});
+  .action(async (_opts: z.infer<typeof createOptionsSchema>) => {});

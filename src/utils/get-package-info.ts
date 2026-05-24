@@ -4,8 +4,11 @@ import type { IFileSystemService } from '@/services/file-system/types';
 
 import path from 'pathe';
 
-// import fs from 'fs-extra';
-import type { PackageJson } from 'type-fest';
+type PackageJson = {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  [key: string]: unknown;
+};
 
 export const GetPackageInfoServiceId = createId('get-package-info-service-id');
 

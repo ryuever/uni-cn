@@ -1,11 +1,11 @@
 import { injectable } from '@x-oasis/di';
-import type { IFileSystemService } from './types';
+import type { IFileSystemService, IPromisifiedFs } from './types';
 import fsExtra from 'fs-extra';
 import { promises as fs } from 'node:fs';
 
 @injectable()
 export class NodeFileSystem implements IFileSystemService {
-  get promisifyFs() {
+  get promisifyFs(): IPromisifiedFs {
     return {
       readFile: fs.readFile.bind(fs),
       writeFile: fs.writeFile.bind(fs),

@@ -198,8 +198,9 @@ export class AddCommandService {
         }
       }
 
-      let { errors, config } =
-        await this.preFlightAddService.preFlightAdd(options);
+      const preflight = await this.preFlightAddService.preFlightAdd(options);
+      const { errors } = preflight;
+      let { config } = preflight;
 
       // No components.json file. Prompt the user to run init.
       if (errors[ERRORS.MISSING_CONFIG]) {

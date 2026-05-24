@@ -197,7 +197,7 @@ export default defineConfig({
 export async function getRegistryTemplates(
   templateName: string,
   style: string
-) {
+): Promise<z.infer<typeof registryItemSchema> | null> {
   try {
     const [result] = await fetchRegistry([
       isUrl(templateName)
@@ -212,7 +212,7 @@ export async function getRegistryTemplates(
       return registryItemSchema.parse(DEFAULT_TEMPLATE_FALLBACK);
     }
     handleError(error);
-    return {};
+    return null;
   }
 }
 
@@ -536,7 +536,7 @@ export class RegistryResolveItemsTreeService {
       }
 
       // Sort the payload so that registry:theme is always first.
-      payload.sort((a, b) => {
+      payload.sort((a) => {
         if (a.type === 'registry:theme') {
           return -1;
         }
@@ -666,7 +666,7 @@ export function isUrl(path: string) {
   try {
     new URL(path);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

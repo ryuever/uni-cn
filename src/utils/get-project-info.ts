@@ -108,21 +108,16 @@ export class GetTailwindCssFileService {
   ) {}
 
   async getTailwindCssFile(cwd: string) {
-    const [files, tailwindVersion] = await Promise.all([
-      glob(['**/*.css', '**/*.scss'], {
-        cwd,
-        deep: 5,
-        ignore: PROJECT_SHARED_IGNORE,
-      }),
-      this.getTailwindVersionService.getTailwindVersion(cwd),
-    ]);
+    const files = await glob(['**/*.css', '**/*.scss'], {
+      cwd,
+      deep: 5,
+      ignore: PROJECT_SHARED_IGNORE,
+    });
 
     if (!files.length) {
       return null;
     }
 
-    const needle =
-      tailwindVersion === 'v4' ? `@import "tailwindcss"` : '@tailwind base';
     for (const file of files) {
       const contents = await this.fileSystemService.promisifyFs.readFile(
         path.resolve(cwd, file),
@@ -167,13 +162,12 @@ export class GetProjectInfoService {
         cwd,
         deep: 3,
         ignore: PROJECT_SHARED_IGNORE,
-      }),
+      }) as Promise<string[]>,
       isTypeScriptProject(cwd),
       getTailwindConfigFile(cwd),
       this.getTailwindCssFileService.getTailwindCssFile(cwd),
       this.getTailwindVersionService.getTailwindVersion(cwd),
       getTsConfigAliasPrefix(cwd),
-      this.getPackageInfoService.getPackageInfo(cwd, false),
     ]);
 
     const type: ProjectInfo = {

@@ -29,7 +29,7 @@ export function transformIcons(
       }
 
       const sourceLibrary = SOURCE_LIBRARY;
-      const targetLibrary = config.iconLibrary;
+      const targetLibrary = config.iconLibrary as keyof typeof ICON_LIBRARIES;
 
       if (sourceLibrary === targetLibrary) {
         return transformCount;
@@ -51,6 +51,9 @@ export function transformIcons(
 
             for (const specifier of path.node.specifiers ?? []) {
               if (specifier.type === 'ImportSpecifier') {
+                if (specifier.imported.type !== 'Identifier') {
+                  continue;
+                }
                 const iconName = specifier.imported.name;
 
                 const targetedIcon = registryIcons[iconName]?.[targetLibrary];
@@ -65,10 +68,7 @@ export function transformIcons(
             }
 
             if (targetedIconsMap.size > 0) {
-              path.node.source.value =
-                ICON_LIBRARIES[
-                  targetLibrary as keyof typeof ICON_LIBRARIES
-                ].import;
+              path.node.source.value = ICON_LIBRARIES[targetLibrary].import;
             }
 
             return this.traverse(path);

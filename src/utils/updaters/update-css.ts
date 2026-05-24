@@ -189,9 +189,11 @@ function updateCssPlugin(css: z.infer<typeof registryItemCssSchema>) {
                       raws: { semicolon: true, before: '\n    ' },
                     });
 
-                    existingDecl
-                      ? existingDecl.replaceWith(decl)
-                      : utilityAtRule.append(decl);
+                    if (existingDecl) {
+                      existingDecl.replaceWith(decl);
+                    } else {
+                      utilityAtRule.append(decl);
+                    }
                   } else if (typeof value === 'object') {
                     processRule(utilityAtRule, prop, value);
                   }
@@ -311,7 +313,11 @@ function processRule(parent: Root | AtRule, selector: string, properties: any) {
             node.type === 'decl' && node.prop === prop
         );
 
-        existingDecl ? existingDecl.replaceWith(decl) : rule.append(decl);
+        if (existingDecl) {
+          existingDecl.replaceWith(decl);
+        } else {
+          rule.append(decl);
+        }
       } else if (typeof value === 'object') {
         // Nested selector (including & selectors)
         const nestedSelector = prop.startsWith('&')

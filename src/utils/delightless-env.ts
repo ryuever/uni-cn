@@ -1,5 +1,4 @@
 import type {
-  registryItemSchema,
   registryItemTypeSchema,
 } from '@/registry/schema';
 

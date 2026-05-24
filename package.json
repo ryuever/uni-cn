@@ -86,15 +86,18 @@
   "devDependencies": {
     "@antfu/ni": "^0.23.2",
     "@changesets/cli": "^2.31.0",
+    "@eslint/js": "^9.39.3",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.10.0",
     "@types/prompts": "^2.4.9",
     "@types/semver": "^7.7.1",
     "@unovue/detypes": "^0.8.5",
     "eslint": "^9.0.0",
+    "globals": "^17.6.0",
     "msw": "^2.12.10",
     "tsdown": "^0.17.2",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.59.4",
     "vitest": "^2.0.0"
   },
   "engines": {

@@ -145,7 +145,7 @@ export class AddTailwindConfigThemeService {
       const themeObject = await this.parseObjectLiteralService.parseObjectLiteral(
         themeObjectString,
       )
-      const result = deepmerge(themeObject, theme, {
+      const result = deepmerge(themeObject, theme ?? {}, {
         arrayMerge: (dst, src) => src,
       })
       const resultString = objectToString(result)

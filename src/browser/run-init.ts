@@ -1,5 +1,5 @@
 import { Container } from '@x-oasis/di';
-import { InitCommandService, InitCommandServiceId } from '@/commands/init';
+import { InitCommandServiceId } from '@/commands/init';
 import { initServiceModules } from '@/commands/initService';
 import { FileSystemServiceId } from '@/services/file-system/constants';
 import { MemFileSystem } from '@/services/file-system/MemFileSystem';

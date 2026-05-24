@@ -25,6 +25,7 @@ import type { TransformersService } from '@/utils/transformers';
 
 import type { z } from 'zod';
 
+import { existsSync } from 'node:fs';
 import path, { basename, dirname } from 'pathe';
 
 import prompts from 'prompts';
@@ -172,7 +173,7 @@ export class UpdateFilesService {
       const targetDir = path.dirname(filePath);
 
       if (!config.typescript) {
-        filePath = filePath.replace(/\.ts?$/, (match) => '.js');
+        filePath = filePath.replace(/\.ts?$/, '.js');
       }
 
       const existingFile = this.fileSystemService.fsExtra.existsSync(filePath);
@@ -272,9 +273,11 @@ export class UpdateFilesService {
         content,
         'utf-8'
       );
-      existingFile
-        ? filesUpdated.push(path.relative(config.resolvedPaths.cwd, filePath))
-        : filesCreated.push(path.relative(config.resolvedPaths.cwd, filePath));
+      if (existingFile) {
+        filesUpdated.push(path.relative(config.resolvedPaths.cwd, filePath));
+      } else {
+        filesCreated.push(path.relative(config.resolvedPaths.cwd, filePath));
+      }
     }
 
     const allFiles = [...filesCreated, ...filesUpdated, ...filesSkipped];
@@ -535,9 +538,11 @@ export class ResolveImportsService {
 
       try {
         // Create a custom transformer for import resolution
-        const importResolverTransformer = (opts: any) => ({
+        const importResolverTransformer = (_opts: unknown) => ({
+          type: 'codemod' as const,
           name: 'import-resolver',
           transform(node: any) {
+            let transformCount = 0;
             // Handle import declarations
             if (node.type === 'ImportDeclaration' && node.source?.value) {
               const moduleSpecifier = node.source.value;
@@ -547,7 +552,7 @@ export class ResolveImportsService {
                 projectInfo?.aliasPrefix &&
                 !moduleSpecifier.startsWith(`${projectInfo.aliasPrefix}/`)
               ) {
-                return;
+                return transformCount;
               }
 
               // Find the probable import file path.
@@ -557,7 +562,7 @@ export class ResolveImportsService {
               );
 
               if (!probableImportFilePath) {
-                return;
+                return transformCount;
               }
 
               // Find the actual import file path.
@@ -568,7 +573,7 @@ export class ResolveImportsService {
               );
 
               if (!resolvedImportFilePath) {
-                return;
+                return transformCount;
               }
 
               // Convert the resolved import file path to an aliased import.
@@ -579,19 +584,20 @@ export class ResolveImportsService {
               );
 
               if (!newImport || newImport === moduleSpecifier) {
-                return;
+                return transformCount;
               }
 
               // Update the import source
               node.source.value = newImport;
               node.source.raw = `'${newImport}'`;
+              transformCount++;
             }
+            return transformCount;
           },
         });
 
         // Use vue-metamorph transform
         const result = metaTransform(content, resolvedPath, [
-          // @ts-expect-error type error
           importResolverTransformer({}),
         ]);
 
@@ -654,7 +660,7 @@ export function resolveModuleByProbablePath(
 
   // 1) Build a set of POSIX-normalized, project-relative files
   const relativeFiles = files.map((f) =>
-    f.split(path.sep).join(path.posix.sep)
+    f.split(path.sep).join('/')
   );
   const fileSet = new Set(relativeFiles);
 
@@ -667,7 +673,7 @@ export function resolveModuleByProbablePath(
 
   // 3) Compute the project-relative "base" directory for strong matching
   const relBaseRaw = path.relative(cwd, absBase);
-  const relBase = relBaseRaw.split(path.sep).join(path.posix.sep);
+  const relBase = relBaseRaw.split(path.sep).join('/');
 
   // 4) Decide which extensions to try
   const tryExts = hasExt ? [extInPath] : extensions;
@@ -678,13 +684,13 @@ export function resolveModuleByProbablePath(
   // 5a) Fast‑path: [base + ext] and [base/index + ext]
   for (const e of tryExts) {
     const absCand = absBase + e;
-    const relCand = path.posix.normalize(path.relative(cwd, absCand));
+    const relCand = path.normalize(path.relative(cwd, absCand));
     if (fileSet.has(relCand) || existsSync(absCand)) {
       candidates.add(relCand);
     }
 
     const absIdx = path.join(absBase, `index${e}`);
-    const relIdx = path.posix.normalize(path.relative(cwd, absIdx));
+    const relIdx = path.normalize(path.relative(cwd, absIdx));
     if (fileSet.has(relIdx) || existsSync(absIdx)) {
       candidates.add(relIdx);
     }
@@ -704,8 +710,8 @@ export function resolveModuleByProbablePath(
   // 7) Sort by (1) extension priority, then (2) "strong" base match
   const sorted = Array.from(candidates).sort((a, b) => {
     // a) extension order
-    const aExt = path.posix.extname(a);
-    const bExt = path.posix.extname(b);
+    const aExt = path.extname(a);
+    const bExt = path.extname(b);
     const ord = tryExts.indexOf(aExt) - tryExts.indexOf(bExt);
     if (ord !== 0) return ord;
     // b) strong match if path starts with relBase
@@ -744,7 +750,7 @@ export function toAliasedImport(
   rel = rel.split(path.sep).join('/'); // e.g. "button/index.vue"
 
   // 3️⃣ Strip code-file extensions, keep others (css, json, etc.)
-  const ext = path.posix.extname(rel);
+  const ext = path.extname(rel);
   const codeExts = ['.ts', '.vue', '.js'];
   const keepExt = codeExts.includes(ext) ? '' : ext;
   let noExt = rel.slice(0, rel.length - ext.length);

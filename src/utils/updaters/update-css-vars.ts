@@ -438,9 +438,11 @@ function addOrUpdateVars(
         node.type === 'decl' && node.prop === prop
     );
 
-    existingDecl
-      ? existingDecl.replaceWith(newDecl)
-      : ruleNode?.append(newDecl);
+    if (existingDecl) {
+      existingDecl.replaceWith(newDecl);
+    } else {
+      ruleNode?.append(newDecl);
+    }
   });
 }
 

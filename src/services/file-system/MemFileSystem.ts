@@ -1,5 +1,6 @@
 import { injectable } from '@x-oasis/di';
-import type { IFileSystemService } from './types';
+import type { PathLike } from 'node:fs';
+import type { IFsExtra, IFileSystemService, IPromisifiedFs } from './types';
 import { Volume } from 'memfs';
 
 /**
@@ -19,40 +20,56 @@ export class MemFileSystem implements IFileSystemService {
     return this.vol;
   }
 
-  get promisifyFs() {
+  get promisifyFs(): IPromisifiedFs {
     const vol = this.vol;
-    return {
-      readFile: vol.promises.readFile.bind(vol.promises),
-      writeFile: vol.promises.writeFile.bind(vol.promises),
-      mkdir: vol.promises.mkdir.bind(vol.promises),
-      mkdtemp: vol.promises.mkdtemp.bind(vol.promises),
-      cp: vol.promises.cp.bind(vol.promises),
-      pathExists: async (path: string) => {
+    const promisifyFs = {
+      readFile: (path: PathLike, options?: unknown) =>
+        vol.promises.readFile(String(path), options as never) as Promise<
+          string | Buffer
+        >,
+      writeFile: async (path: PathLike, data: string | Buffer | Uint8Array, options?: unknown) => {
+        await vol.promises.writeFile(
+          String(path),
+          data as never,
+          options as never
+        );
+      },
+      mkdir: (path: PathLike, options?: unknown) =>
+        vol.promises.mkdir(String(path), options as never) as Promise<
+          string | undefined
+        >,
+      mkdtemp: (prefix: string) =>
+        vol.promises.mkdtemp(prefix) as Promise<string>,
+      cp: async (src: PathLike, dest: PathLike, options?: unknown) => {
+        await vol.promises.cp(String(src), String(dest), options as never);
+      },
+      pathExists: async (path: PathLike) => {
         try {
-          await vol.promises.access(path);
+          await vol.promises.access(String(path));
           return true;
         } catch {
           return false;
         }
       },
     };
+    return promisifyFs as unknown as IPromisifiedFs;
   }
 
-  get fsExtra() {
+  get fsExtra(): IFsExtra {
     const vol = this.vol;
     return {
-      existsSync: (path: string) => {
+      existsSync: (path: PathLike) => {
         try {
-          vol.accessSync(path);
+          vol.accessSync(String(path));
           return true;
         } catch {
           return false;
         }
       },
-      readJSONSync: (path: string, options?: { throws?: boolean }) => {
+      readJSONSync: (path: PathLike, options?: { throws?: boolean }) => {
         try {
-          const content = vol.readFileSync(path, 'utf-8');
-          return JSON.parse(content);
+          const content = vol.readFileSync(String(path), 'utf-8');
+          return JSON.parse(String(content));
         } catch (e) {
           if (options?.throws !== false) throw e;
           return undefined;

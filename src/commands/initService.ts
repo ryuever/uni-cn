@@ -4,7 +4,7 @@ import {
   PromptForMinimalConfigService,
   PromptForMinimalConfigServiceId,
 } from '@/commands/init';
-import { Container, Registry } from '@x-oasis/di';
+import { Registry } from '@x-oasis/di';
 import {
   ICwdServiceId,
   IExitServiceId,
