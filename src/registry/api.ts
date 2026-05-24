@@ -8,13 +8,10 @@ import {
   registryResolvedItemsTreeSchema,
   stylesSchema,
 } from '@/registry/schema';
-import {
-  type Config,
-  getTargetStyleFromConfig,
-} from '@/utils/get-config';
+import type { Config } from '@/utils/get-config';
 import { handleError } from '@/utils/handle-error';
 import { logger } from '@/utils/logger';
-import { buildTailwindThemeColorsFromCssVars } from '@/utils/updaters/update-tailwind-config';
+import { buildTailwindThemeColorsFromCssVars } from '@/utils/tailwind-theme-colors';
 
 import { z } from 'zod';
 
@@ -27,8 +24,6 @@ import {
   isDelightlessWorkspaceProject,
   resolveDelightlessProjectName,
 } from '../utils/delightless-env';
-import type { GetProjectTailwindVersionFromConfigService } from '../utils/get-project-info';
-import { GetProjectTailwindVersionFromConfigServiceId } from '../utils/get-project-info';
 import { highlighter } from '../utils/highlighter';
 
 const REGISTRY_BASE =
@@ -405,18 +400,9 @@ export const RegistryResolveItemsTreeServiceId = createId(
 );
 @injectable()
 export class RegistryGetThemeService {
-  constructor(
-    @inject(GetProjectTailwindVersionFromConfigServiceId)
-    private readonly getProjectTailwindVersionFromConfigService: GetProjectTailwindVersionFromConfigService
-  ) {}
-
   async registryGetTheme(name: string, config: Config) {
-    const [baseColor, tailwindVersion] = await Promise.all([
-      getRegistryBaseColor(name),
-      this.getProjectTailwindVersionFromConfigService.getProjectTailwindVersionFromConfig(
-        config
-      ),
-    ]);
+    const baseColor = await getRegistryBaseColor(name);
+    const tailwindVersion = config.tailwind.config === '' ? 'v4' : 'v3';
     if (!baseColor) {
       return null;
     }
@@ -592,9 +578,7 @@ async function resolveRegistryDependencies(
   const visited = new Set<string>();
   const payload: string[] = [];
 
-  const style = config.resolvedPaths?.cwd
-    ? await getTargetStyleFromConfig(config.resolvedPaths.cwd, config.style)
-    : config.style;
+  const style = config.style;
 
   async function resolveDependencies(itemUrl: string) {
     let nextItemUrl = itemUrl;

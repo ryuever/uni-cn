@@ -1,21 +1,10 @@
-import { Container } from '@x-oasis/di';
-import { InitCommandServiceId } from '@/commands/init';
-import { initServiceModules } from '@/commands/initService';
-import { FileSystemServiceId } from '@/services/file-system/constants';
 import { MemFileSystem } from '@/services/file-system/MemFileSystem';
-import {
-  BrowserCwdService,
-  BrowserExitService,
-  BrowserTempDirService,
-  ICwdServiceId,
-  IExitServiceId,
-  ITempDirServiceId,
-} from '@/services/env';
-import { GetProjectTailwindVersionFromConfigServiceId } from '@/utils/get-project-info';
 import type { Config } from '@/utils/get-config';
 import path from 'pathe';
 import type { Volume } from 'memfs';
 import { buildMemfsConfig } from './config';
+import { applyComponentsToVolume } from './apply-components';
+import { spinner } from '@/utils/spinner';
 
 export interface RunInitWithVolumeOptions {
   /**
@@ -27,6 +16,8 @@ export interface RunInitWithVolumeOptions {
   skipAddComponents?: boolean;
   /** @default true */
   silent?: boolean;
+  /** @default "v4" */
+  tailwindVersion?: 'v3' | 'v4';
 }
 
 /**
@@ -40,43 +31,34 @@ export async function runInitWithVolume(
   config: Config = buildMemfsConfig(root),
   options: RunInitWithVolumeOptions = {}
 ) {
-  const { skipAddComponents = true, silent = true } = options;
+  const {
+    skipAddComponents = true,
+    silent = true,
+    tailwindVersion = 'v4',
+  } = options;
 
-  const container = new Container();
-  container.load(initServiceModules);
-  container
-    .bind(FileSystemServiceId)
-    .toConstantValue(new MemFileSystem(vol));
-  container
-    .bind(ICwdServiceId)
-    .toConstantValue(new BrowserCwdService(root));
-  container
-    .bind(ITempDirServiceId)
-    .toConstantValue(new BrowserTempDirService(path.join(root, 'tmp')));
-  container
-    .bind(IExitServiceId)
-    .toConstantValue(new BrowserExitService());
-  container
-    .bind(GetProjectTailwindVersionFromConfigServiceId)
-    .toConstantValue({
-      getProjectTailwindVersionFromConfig: async () => 'v4' as const,
-    });
-
-  const initService = container.get(InitCommandServiceId);
-
-  return initService.runInit({
-    cwd: root,
-    yes: true,
-    defaults: true,
-    force: true,
+  const fs = new MemFileSystem(vol);
+  const { resolvedPaths: _resolvedPaths, ...configForDisk } = config;
+  const componentSpinner = spinner(`Writing components.json.`, {
     silent,
-    skipPreflight: true,
-    skipDependenciesInstall: true,
-    skipAddComponents,
-    tailwindVersion: 'v4',
-    config,
-    isNewProject: false,
-    cssVariables: true,
+  }).start();
+  await fs.promisifyFs.writeFile(
+    path.resolve(root, 'components.json'),
+    JSON.stringify(configForDisk, null, 2),
+    'utf8'
+  );
+  componentSpinner?.succeed();
+
+  if (skipAddComponents) {
+    return config;
+  }
+
+  await applyComponentsToVolume(vol, root, ['index'], config, {
+    silent,
+    overwrite: true,
     style: 'index',
+    tailwindVersion,
   });
+
+  return config;
 }

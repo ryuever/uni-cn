@@ -1,60 +1,25 @@
-import { Container } from '@x-oasis/di';
-import { addServiceModules } from '@/commands/addService';
-import { AddCommandServiceId } from '@/commands/add';
-import type { AddCommandService } from '@/commands/add';
 import { MemFileSystem } from '@/services/file-system/MemFileSystem';
-import { FileSystemServiceId } from '@/services/file-system/constants';
-import {
-  BrowserCwdService,
-  BrowserExitService,
-  BrowserTempDirService,
-  ICwdServiceId,
-  IExitServiceId,
-  ITempDirServiceId,
-} from '@/services/env';
-import { GetProjectTailwindVersionFromConfigServiceId } from '@/utils/get-project-info';
-import { AddComponentsServiceId } from '@/utils/add-components';
-import type { AddComponentsService } from '@/utils/add-components';
 import type { Config } from '@/utils/get-config';
-import path from 'pathe';
+import { CreateTemplateFilesService } from '@/utils/updaters/create-template-files';
+
 import type { Volume } from 'memfs';
+
+import { applyComponentsToVolume } from './apply-components';
 import { buildMemfsConfig } from './config';
 
 export interface RunAddWithVolumeOptions {
   /** @default true */
   silent?: boolean;
-}
-
-/**
- * Build a DI container configured for memfs/browser add operations.
- */
-function createAddContainer(vol: Volume, root: string) {
-  const container = new Container();
-  container.load(addServiceModules);
-  container
-    .bind(FileSystemServiceId)
-    .toConstantValue(new MemFileSystem(vol));
-  container
-    .bind(ICwdServiceId)
-    .toConstantValue(new BrowserCwdService(root));
-  container
-    .bind(ITempDirServiceId)
-    .toConstantValue(new BrowserTempDirService(path.join(root, 'tmp')));
-  container
-    .bind(IExitServiceId)
-    .toConstantValue(new BrowserExitService());
-  container
-    .bind(GetProjectTailwindVersionFromConfigServiceId)
-    .toConstantValue({
-      getProjectTailwindVersionFromConfig: async () => 'v4' as const,
-    });
-  return container;
+  /** @default true */
+  overwrite?: boolean;
+  /** @default "v4" */
+  tailwindVersion?: 'v3' | 'v4';
 }
 
 /**
  * Run add against a memfs Volume. All file changes go to memfs.
  * Bypasses getConfig (which uses Node fs) by passing pre-built config.
- * npm install is skipped since execa cannot run against memfs paths.
+ * npm install is skipped; dependencies are merged into package.json.
  */
 export async function runAddWithVolume(
   vol: Volume,
@@ -63,17 +28,16 @@ export async function runAddWithVolume(
   config: Config = buildMemfsConfig(root),
   options: RunAddWithVolumeOptions = {}
 ) {
-  const { silent = true } = options;
-  const container = createAddContainer(vol, root);
+  const {
+    silent = true,
+    overwrite = true,
+    tailwindVersion = 'v4',
+  } = options;
 
-  const addComponentsService: AddComponentsService =
-    container.get(AddComponentsServiceId);
-
-  return addComponentsService.addComponents(components, config, {
-    overwrite: true,
+  return applyComponentsToVolume(vol, root, components, config, {
     silent,
-    skipDependenciesInstall: true,
-    tailwindVersion: 'v4',
+    overwrite,
+    tailwindVersion,
   });
 }
 
@@ -92,15 +56,13 @@ export async function runAddTemplateWithVolume(
   root: string,
   options: RunAddTemplateWithVolumeOptions = {}
 ) {
-  const container = createAddContainer(vol, root);
-
-  const addService: AddCommandService =
-    container.get(AddCommandServiceId);
-
-  return addService.runAddTemplate({
-    cwd: root,
-    template: options.template ?? 'default',
-    style: options.style ?? 'default',
-    name: options.name ?? 'my-project',
-  });
+  return new CreateTemplateFilesService(new MemFileSystem(vol)).createTemplateFiles(
+    root,
+    {
+      cwd: root,
+      template: options.template ?? 'default',
+      style: options.style ?? 'default',
+      name: options.name ?? 'my-project',
+    }
+  );
 }

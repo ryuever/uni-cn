@@ -36,11 +36,43 @@ export function buildMemfsConfig(
         ? path.join(root, raw.tailwind.config)
         : '',
       tailwindCss: path.join(root, raw.tailwind.css),
-      utils: path.join(root, 'src/lib/utils'),
-      components: path.join(root, 'src/components'),
-      composables: path.join(root, 'composables'),
-      lib: path.join(root, 'src/lib'),
-      ui: path.join(root, 'src/components/ui'),
+      utils: resolveAliasPath(root, raw.aliases.utils, 'src/lib/utils'),
+      components: resolveAliasPath(root, raw.aliases.components, 'src/components'),
+      composables: resolveAliasPath(root, raw.aliases.composables, 'src/composables'),
+      lib: resolveAliasPath(root, raw.aliases.lib, 'src/lib'),
+      ui: resolveAliasPath(
+        root,
+        raw.aliases.ui,
+        path.join(aliasToRelativePath(raw.aliases.components), 'ui')
+      ),
     },
   } as Config;
+}
+
+function resolveAliasPath(
+  root: string,
+  alias: string | undefined,
+  fallback: string
+) {
+  return path.join(root, alias ? aliasToRelativePath(alias) : fallback);
+}
+
+function aliasToRelativePath(alias: string) {
+  if (alias.startsWith('@/')) {
+    return path.join('src', alias.slice(2));
+  }
+
+  if (alias.startsWith('~/')) {
+    return alias.slice(2);
+  }
+
+  if (alias.startsWith('./')) {
+    return alias.slice(2);
+  }
+
+  if (alias.startsWith('/')) {
+    return alias.slice(1);
+  }
+
+  return alias;
 }

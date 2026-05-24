@@ -16,20 +16,25 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     },
     "./browser": {
       "types": "./dist/browser/index.d.mts",
+      "browser": "./dist/browser/index.mjs",
+      "import": "./dist/browser/index.mjs",
       "default": "./dist/browser/index.mjs"
     },
     "./registry": {
-      "types": "./dist/registry/index.d.ts",
-      "default": "./dist/registry/index.js"
+      "types": "./dist/registry/index.d.mts",
+      "import": "./dist/registry/index.mjs",
+      "default": "./dist/registry/index.mjs"
     },
     "./schema": {
-      "types": "./dist/registry/schema.d.ts",
-      "default": "./dist/registry/schema.js"
+      "types": "./dist/registry/schema.d.mts",
+      "import": "./dist/registry/schema.mjs",
+      "default": "./dist/registry/schema.mjs"
     }
   },
   "bin": {

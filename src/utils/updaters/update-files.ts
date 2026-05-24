@@ -9,8 +9,8 @@ import type { IFileSystemService } from '@/services/file-system/types';
 import {
   ICwdServiceId,
   ITempDirServiceId,
-} from '@/services/env';
-import type { ICwdService, ITempDirService } from '@/services/env';
+} from '@/services/env/types';
+import type { ICwdService, ITempDirService } from '@/services/env/types';
 import { type Config, getTSConfig } from '@/utils/get-config';
 import type {
   GetProjectInfoService,
@@ -25,7 +25,6 @@ import type { TransformersService } from '@/utils/transformers';
 
 import type { z } from 'zod';
 
-import { existsSync } from 'node:fs';
 import path, { basename, dirname } from 'pathe';
 
 import prompts from 'prompts';
@@ -115,8 +114,6 @@ export class UpdateFilesService {
           config.style,
           file.path
         );
-
-        console.log('>>>>>> tempPath ', tempPath)
 
         await this.fileSystemService.promisifyFs.mkdir(tempDir, {
           recursive: true,
@@ -525,9 +522,11 @@ export class ResolveImportsService {
 
     for (const filepath of filePaths) {
       const resolvedPath = path.resolve(config.resolvedPaths.cwd, filepath);
+      const fileExists = (candidate: string) =>
+        this.fileSystemService.fsExtra.existsSync(candidate);
 
       // Check if the file exists.
-      if (!existsSync(resolvedPath)) {
+      if (!this.fileSystemService.fsExtra.existsSync(resolvedPath)) {
         continue;
       }
 
@@ -569,7 +568,9 @@ export class ResolveImportsService {
               const resolvedImportFilePath = resolveModuleByProbablePath(
                 probableImportFilePath,
                 filePaths,
-                config
+                config,
+                undefined,
+                fileExists
               );
 
               if (!resolvedImportFilePath) {
@@ -654,7 +655,8 @@ export function resolveModuleByProbablePath(
   probableImportFilePath: string,
   files: string[],
   config: Config,
-  extensions: string[] = ['.vue', '.ts', '.js', '.css']
+  extensions: string[] = ['.vue', '.ts', '.js', '.css'],
+  fileExists: (path: string) => boolean = () => false
 ) {
   const cwd = path.normalize(config.resolvedPaths.cwd);
 
@@ -685,13 +687,13 @@ export function resolveModuleByProbablePath(
   for (const e of tryExts) {
     const absCand = absBase + e;
     const relCand = path.normalize(path.relative(cwd, absCand));
-    if (fileSet.has(relCand) || existsSync(absCand)) {
+    if (fileSet.has(relCand) || fileExists(absCand)) {
       candidates.add(relCand);
     }
 
     const absIdx = path.join(absBase, `index${e}`);
     const relIdx = path.normalize(path.relative(cwd, absIdx));
-    if (fileSet.has(relIdx) || existsSync(absIdx)) {
+    if (fileSet.has(relIdx) || fileExists(absIdx)) {
       candidates.add(relIdx);
     }
   }

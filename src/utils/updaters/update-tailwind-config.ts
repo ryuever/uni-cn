@@ -1,16 +1,14 @@
 import { createId, inject, injectable } from '@x-oasis/di'
-import type {
-  registryItemCssVarsSchema,
-  registryItemTailwindSchema,
-} from '@/registry/schema'
+import type { registryItemTailwindSchema } from '@/registry/schema'
 import { FileSystemServiceId } from '@/services/file-system/constants'
 import type { IFileSystemService } from '@/services/file-system/types'
-import { ITempDirServiceId } from '@/services/env'
-import type { ITempDirService } from '@/services/env'
+import { ITempDirServiceId } from '@/services/env/types'
+import type { ITempDirService } from '@/services/env/types'
 import type { Config } from '@/utils/get-config'
 import type { TailwindVersion } from '@/utils/get-project-info'
 import { highlighter } from '@/utils/highlighter'
 import { spinner } from '@/utils/spinner'
+export { buildTailwindThemeColorsFromCssVars } from '@/utils/tailwind-theme-colors'
 
 import type { z } from 'zod'
 
@@ -588,42 +586,4 @@ function parseValue(node: any): any {
     default:
       return node.getText()
   }
-}
-
-export function buildTailwindThemeColorsFromCssVars(
-  cssVars: z.infer<typeof registryItemCssVarsSchema>,
-) {
-  const result: Record<string, any> = {}
-
-  for (const key of Object.keys(cssVars)) {
-    const parts = key.split('-')
-    const colorName = parts[0]
-    const subType = parts.slice(1).join('-')
-
-    if (subType === '') {
-      if (typeof result[colorName] === 'object') {
-        result[colorName].DEFAULT = `hsl(var(--${key}))`
-      } else {
-        result[colorName] = `hsl(var(--${key}))`
-      }
-    } else {
-      if (typeof result[colorName] !== 'object') {
-        result[colorName] = { DEFAULT: `hsl(var(--${colorName}))` }
-      }
-      result[colorName][subType] = `hsl(var(--${key}))`
-    }
-  }
-
-  // Remove DEFAULT if it's not in the original cssVars
-  for (const [colorName, value] of Object.entries(result)) {
-    if (
-      typeof value === 'object'
-      && value.DEFAULT === `hsl(var(--${colorName}))`
-      && !(colorName in cssVars)
-    ) {
-      delete value.DEFAULT
-    }
-  }
-
-  return result
 }
