@@ -1,4 +1,4 @@
-# @xport/uni-cn
+# @x-oasis/uni-cn
 
 ## 1.1.2
 
