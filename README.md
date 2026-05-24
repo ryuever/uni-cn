@@ -250,10 +250,11 @@ pnpm changeset
 ```
 
 Merging changesets into `main` opens or updates the release PR. Merging that release PR publishes the package to npm through the
-`NPM Release` GitHub Actions workflow, which requires these repository secrets:
+`NPM Release` GitHub Actions workflow, which requires:
 
-- `CHANGESETS_TOKEN`: a fine-grained GitHub PAT with read/write access to Contents and Pull requests.
 - `NPM_TOKEN`: an npm token allowed to publish this package.
+- Either enable `Allow GitHub Actions to create and approve pull requests` in repository Actions settings, or add `CHANGESETS_TOKEN`
+  as a fine-grained GitHub PAT with read/write access to Contents and Pull requests.
 
 ### Browser Demo
 

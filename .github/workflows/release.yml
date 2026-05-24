@@ -60,13 +60,12 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
-      - name: Check release PR token
+      - name: Check release PR token mode
         env:
           CHANGESETS_TOKEN: ${{ secrets.CHANGESETS_TOKEN }}
         run: |
           if [ -z "$CHANGESETS_TOKEN" ]; then
-            echo "::error::Missing CHANGESETS_TOKEN. Add a repository secret with a fine-grained GitHub PAT that can write Contents and Pull requests."
-            exit 1
+            echo "::notice::CHANGESETS_TOKEN is not set. Falling back to GITHUB_TOKEN; make sure repository Actions settings allow GitHub Actions to create pull requests."
           fi
 
       - run: pnpm install --frozen-lockfile
@@ -81,7 +80,7 @@ jobs:
           title: 'chore: release'
           createGithubReleases: true
         env:
-          GITHUB_TOKEN: ${{ secrets.CHANGESETS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CHANGESETS_TOKEN || secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   dry-run:
