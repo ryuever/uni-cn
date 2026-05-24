@@ -1,5 +1,12 @@
 # @x-oasis/uni-cn
 
+## 1.1.5
+
+### Patch Changes
+
+- f1fa292: feat: update
+- ff53431: feat: udpate
+
 ## 1.1.4
 
 ### Patch Changes
