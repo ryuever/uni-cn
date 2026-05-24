@@ -1,5 +1,11 @@
 # @x-oasis/uni-cn
 
+## 1.1.4
+
+### Patch Changes
+
+- 21faed4: feat: update
+
 ## 1.1.3
 
 ### Patch Changes
