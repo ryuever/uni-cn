@@ -241,6 +241,17 @@ pnpm build
 pnpm test
 ```
 
+### Changesets
+
+Create a changeset for user-facing package changes:
+
+```bash
+pnpm changeset
+```
+
+Merging changesets into `main` opens or updates the release PR. Merging that release PR publishes the package to npm through the
+`NPM Release` GitHub Actions workflow, which requires an `NPM_TOKEN` repository secret.
+
 ### Browser Demo
 
 ```bash

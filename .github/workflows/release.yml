@@ -1,29 +1,30 @@
-name: Release
+name: NPM Release
 
 on:
   push:
-    tags: ['v*']
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       dry-run:
-        description: 'Dry run (skip actual publish)'
+        description: 'Run npm publish dry-run instead of releasing'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 concurrency:
-  group: release
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  ci:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.11.0
 
       - uses: actions/setup-node@v4
         with:
@@ -36,18 +37,56 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-  publish:
-    needs: ci
+  release:
+    needs: validate
+    if: ${{ github.event_name == 'push' || !inputs['dry-run'] }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
       id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create release PR or publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset:version
+          publish: pnpm release
+          commit: 'chore: release'
+          title: 'chore: release'
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  dry-run:
+    needs: validate
+    if: ${{ inputs['dry-run'] }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.11.0
 
       - uses: actions/setup-node@v4
         with:
@@ -58,20 +97,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
-      - name: Publish to npm
-        if: ${{ !inputs.dry-run || inputs.dry-run == 'false' }}
-        run: pnpm publish --access public --no-git-checks
+      - name: NPM publish dry run
+        run: pnpm publish --access public --dry-run
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish dry run
-        if: ${{ inputs.dry-run == 'true' }}
-        run: pnpm publish --access public --no-git-checks --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') && !inputs.dry-run
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true

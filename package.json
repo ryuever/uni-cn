@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Headless CLI for adding components - DI-based, supports memfs for testing and non-Node environments",
   "license": "MIT",
+  "packageManager": "pnpm@10.11.0",
   "keywords": [
     "components",
     "ui",
@@ -18,7 +19,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./browser":{"types":"./dist/browser/index.d.mts","default":"./dist/browser/index.mjs"},"./registry": {
+    "./browser": {
+      "types": "./dist/browser/index.d.mts",
+      "default": "./dist/browser/index.mjs"
+    },
+    "./registry": {
       "types": "./dist/registry/index.d.ts",
       "default": "./dist/registry/index.js"
     },
@@ -31,6 +36,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "tsdown --watch",
     "build": "tsdown",
@@ -41,6 +49,10 @@
     "test": "vitest run",
     "test:update": "vitest run -u",
     "test:ui": "vitest --ui",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "pnpm build && changeset publish",
+    "release": "pnpm changeset:publish",
     "add": "node ./dist/cli.mjs add",
     "init": "node ./dist/cli.mjs init"
   },
@@ -73,6 +85,7 @@
   },
   "devDependencies": {
     "@antfu/ni": "^0.23.2",
+    "@changesets/cli": "^2.31.0",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.10.0",
     "@types/prompts": "^2.4.9",

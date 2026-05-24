@@ -1,13 +1,22 @@
-name: CI
+name: Git Flow CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'release/**'
+      - 'hotfix/**'
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - develop
+      - 'release/**'
+      - 'hotfix/**'
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -18,7 +27,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.11.0
 
       - uses: actions/setup-node@v4
         with:
@@ -35,7 +44,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.11.0
 
       - uses: actions/setup-node@v4
         with:
@@ -52,7 +61,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.11.0
 
       - uses: actions/setup-node@v4
         with:
@@ -69,7 +78,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.11.0
 
       - uses: actions/setup-node@v4
         with:
