@@ -156,6 +156,69 @@ export type ButtonVariants = VariantProps<typeof buttonVariants>
   ],
 };
 
+export const TEMPLATE_DEFAULT = {
+  $schema: 'https://ui.shadcn.com/schema/registry-item.json',
+  name: 'default',
+  type: 'registry:template',
+  files: [
+    {
+      path: 'templates/default/package.json',
+      content: JSON.stringify(
+        {
+          name: 'template-from-registry',
+          private: true,
+          version: '0.0.0',
+          type: 'module',
+          scripts: {
+            dev: 'vite',
+            build: 'vite build',
+            preview: 'vite preview',
+          },
+          dependencies: {
+            vue: '^3.4.0',
+          },
+          devDependencies: {
+            vite: '^5.0.0',
+            '@vitejs/plugin-vue': '^5.0.0',
+          },
+        },
+        null,
+        2
+      ),
+      type: 'registry:template',
+    },
+    {
+      path: 'templates/default/src/App.vue',
+      content: `<template>
+  <main>Hello virtual template</main>
+</template>
+`,
+      type: 'registry:template',
+    },
+    {
+      path: 'templates/default/src/main.ts',
+      content: `import { createApp } from 'vue'
+import App from './App.vue'
+
+createApp(App).mount('#app')
+`,
+      type: 'registry:template',
+    },
+    {
+      path: 'templates/default/index.html',
+      content: `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+`,
+      type: 'registry:template',
+    },
+  ],
+};
+
 export const COLORS_NEUTRAL = {
   inlineColors: {
     light: {} as Record<string, string>,

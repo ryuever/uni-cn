@@ -4,7 +4,8 @@ import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runInitWithVolume } from '@/browser/run-init';
-import { runAddWithVolume } from '@/browser/run-add';
+import { runAddTemplateWithVolume, runAddWithVolume } from '@/browser/run-add';
+import { runCreateWithVolume } from '@/browser/run-create';
 import { buildMemfsConfig, defaultMemfsRawConfig } from '@/browser/config';
 import { clearRegistryCache } from '@/registry/api';
 import type { RawConfig } from '@/utils/get-config';
@@ -15,6 +16,7 @@ import { ADD_BUTTON_VUE_PROJECT_FILES } from '../../examples/fs-vite-browser/src
 
 import {
   populateVolume,
+  readVolumeFiles,
   assertVolumeContains,
   assertFileExists,
   readJsonFromVolume,
@@ -25,6 +27,7 @@ import {
   STYLE_INDEX,
   STYLE_UTILS,
   STYLE_BUTTON,
+  TEMPLATE_DEFAULT,
   COLORS_NEUTRAL,
   ICONS_INDEX,
 } from './registry-fixtures';
@@ -88,6 +91,9 @@ const server = setupServer(
   }),
   http.get(`${REGISTRY_URL}/styles/new-york/button.json`, () => {
     return HttpResponse.json(STYLE_BUTTON);
+  }),
+  http.get(`${REGISTRY_URL}/styles/default/default.json`, () => {
+    return HttpResponse.json(TEMPLATE_DEFAULT);
   }),
   http.get(`${REGISTRY_URL}/colors/neutral.json`, () => {
     return HttpResponse.json(COLORS_NEUTRAL);
@@ -288,6 +294,159 @@ describe('browser-memfs: add button command', () => {
     expect(idxDeps).toBeLessThan(idxCreated);
     expect(idxCreated).toBeLessThan(idxButtonVue);
     expect(idxCreated).toBeLessThan(idxButtonIndex);
+  });
+
+  it('should skip existing component files when overwrite is false', async () => {
+    const vol = new Volume();
+    const existingButtonVue = '<template><button>keep me</button></template>\n';
+    const existingButtonIndex = 'export const preserved = true\n';
+    populateVolume(vol, ROOT, {
+      ...INIT_VUE_PROJECT_FILES,
+      'src/components/ui/button/Button.vue': existingButtonVue,
+      'src/components/ui/button/index.ts': existingButtonIndex,
+    });
+
+    const config = buildNeutralConfig(ROOT);
+    const result = await runAddWithVolume(vol, ROOT, ['button'], config, {
+      silent: false,
+      overwrite: false,
+    });
+
+    expect(result.filesCreated).toEqual([]);
+    expect(result.filesUpdated).toEqual([]);
+    expect(result.filesSkipped).toEqual([
+      'src/components/ui/button/Button.vue',
+      'src/components/ui/button/index.ts',
+    ]);
+    expect(
+      vol.readFileSync(`${ROOT}/src/components/ui/button/Button.vue`, 'utf-8')
+    ).toBe(existingButtonVue);
+    expect(
+      vol.readFileSync(`${ROOT}/src/components/ui/button/index.ts`, 'utf-8')
+    ).toBe(existingButtonIndex);
+    expect(logMessages).toContainEqual(
+      'ℹ Skipped 2 files: (files might be identical, use --overwrite to overwrite)'
+    );
+  });
+
+  it('should update existing component files when overwrite is true', async () => {
+    const vol = new Volume();
+    populateVolume(vol, ROOT, {
+      ...INIT_VUE_PROJECT_FILES,
+      'src/components/ui/button/Button.vue': '<template><button>old</button></template>\n',
+      'src/components/ui/button/index.ts': 'export const old = true\n',
+    });
+
+    const config = buildNeutralConfig(ROOT);
+    const result = await runAddWithVolume(vol, ROOT, ['button'], config, {
+      silent: false,
+      overwrite: true,
+    });
+
+    expect(result.filesCreated).toEqual([]);
+    expect(result.filesUpdated).toEqual([
+      'src/components/ui/button/Button.vue',
+      'src/components/ui/button/index.ts',
+    ]);
+    expect(result.filesSkipped).toEqual([]);
+    assertVolumeContains(vol, ROOT, {
+      'src/components/ui/button/Button.vue':
+        ADD_BUTTON_VUE_PROJECT_FILES['src/components/ui/button/Button.vue'],
+      'src/components/ui/button/index.ts':
+        ADD_BUTTON_VUE_PROJECT_FILES['src/components/ui/button/index.ts'],
+    });
+    expect(logMessages).toContainEqual('ℹ Updated 2 files:');
+  });
+});
+
+describe('browser-memfs: add template command', () => {
+  it('should add template files into the named project directory', async () => {
+    const vol = new Volume();
+    populateVolume(vol, ROOT, {});
+
+    await runAddTemplateWithVolume(vol, ROOT, {
+      template: 'default',
+      style: 'default',
+      name: 'virtual-app',
+    });
+
+    assertVolumeContains(vol, ROOT, {
+      'virtual-app/package.json': TEMPLATE_DEFAULT.files[0].content,
+      'virtual-app/src/App.vue': TEMPLATE_DEFAULT.files[1].content,
+      'virtual-app/src/main.ts': TEMPLATE_DEFAULT.files[2].content,
+      'virtual-app/index.html': TEMPLATE_DEFAULT.files[3].content,
+    });
+  });
+
+  it('should use the built-in default template fallback when the registry template is unavailable', async () => {
+    server.use(
+      http.get(`${REGISTRY_URL}/styles/default/default.json`, () => {
+        return HttpResponse.json({ message: 'not found' }, { status: 404 });
+      })
+    );
+
+    const vol = new Volume();
+    populateVolume(vol, ROOT, {});
+
+    await runAddTemplateWithVolume(vol, ROOT);
+
+    assertFileExists(vol, ROOT, 'my-project/package.json');
+    assertFileExists(vol, ROOT, 'my-project/src/App.vue');
+    assertFileExists(vol, ROOT, 'my-project/src/main.ts');
+    assertFileExists(vol, ROOT, 'my-project/index.html');
+
+    const pkg = readJsonFromVolume<Record<string, any>>(
+      vol,
+      ROOT,
+      'my-project/package.json'
+    );
+    expect(pkg.name).toBe('my-project');
+    expect(pkg.dependencies.vue).toBe('^3.4.0');
+
+    const appVue = vol.readFileSync(
+      `${ROOT}/my-project/src/App.vue`,
+      'utf-8'
+    ) as string;
+    expect(appVue).toContain('Hello from uni-cn');
+  });
+});
+
+describe('browser-memfs: create command', () => {
+  it('should create template files through the create compatibility entry point', async () => {
+    const vol = new Volume();
+    populateVolume(vol, ROOT, {});
+
+    await runCreateWithVolume(vol, ROOT, {
+      template: 'default',
+      style: 'default',
+      name: 'created-app',
+    });
+
+    assertVolumeContains(vol, ROOT, {
+      'created-app/package.json': TEMPLATE_DEFAULT.files[0].content,
+      'created-app/src/App.vue': TEMPLATE_DEFAULT.files[1].content,
+      'created-app/src/main.ts': TEMPLATE_DEFAULT.files[2].content,
+      'created-app/index.html': TEMPLATE_DEFAULT.files[3].content,
+    });
+  });
+
+  it('should produce the same virtual file tree as add template for the same options', async () => {
+    const addTemplateVol = new Volume();
+    const createVol = new Volume();
+    populateVolume(addTemplateVol, ROOT, {});
+    populateVolume(createVol, ROOT, {});
+    const options = {
+      template: 'default',
+      style: 'default',
+      name: 'equivalent-app',
+    };
+
+    await runAddTemplateWithVolume(addTemplateVol, ROOT, options);
+    await runCreateWithVolume(createVol, ROOT, options);
+
+    expect(readVolumeFiles(createVol, ROOT)).toEqual(
+      readVolumeFiles(addTemplateVol, ROOT)
+    );
   });
 });
 
